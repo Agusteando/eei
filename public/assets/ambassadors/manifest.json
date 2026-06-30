@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "mapping": {
+    "birthday": {
+      "name": "Sunny Birthday Ambassador",
+      "path": "/assets/ambassadors/birthday-ambassador.png",
+      "reason": "Most celebratory birthday framing; Spanish birthday copy fits the Signia employee use case."
+    },
+    "birthdayAlternate": {
+      "name": "Joy Birthday Ambassador",
+      "path": "/assets/ambassadors/birthday-joy-ambassador.png",
+      "reason": "Warm, younger, high-smile birthday pose for lighter celebrations."
+    },
+    "sports": {
+      "name": "Brave Sports Ambassador",
+      "path": "/assets/ambassadors/sports-ambassador.png",
+      "reason": "Soccer action pose and energetic body language match Mundial activations."
+    },
+    "winter": {
+      "name": "Hope Winter Ambassador",
+      "path": "/assets/ambassadors/winter-ambassador.png",
+      "reason": "Husky and blue-toned institutional styling make the strongest winter signal."
+    },
+    "maintenance": {
+      "name": "Hope Maintenance Ambassador",
+      "path": "/assets/ambassadors/maintenance-ambassador.png",
+      "reason": "Calm, composed, trust-building pose for operational notices."
+    },
+    "newYear": {
+      "name": "Sunny New Year Ambassador",
+      "path": "/assets/ambassadors/new-year-ambassador.png",
+      "reason": "Open, cheerful pose works well alongside fireworks without competing with them."
+    }
+  }
+}

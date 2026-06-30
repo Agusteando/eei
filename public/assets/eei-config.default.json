@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "enabled": true,
+  "assetsBaseUrl": "auto",
+  "performance": {
+    "maxPixelRatio": 1.5,
+    "pauseWhenHidden": true
+  },
+  "maintenance": {
+    "enabled": true,
+    "title": "Mantenimiento programado",
+    "message": "La plataforma entrara en una ventana breve de servicio.",
+    "targetAt": "2026-07-01T03:00:00-06:00",
+    "severity": "planned"
+  },
+  "birthday": {
+    "enabled": true,
+    "mode": "api",
+    "apiUrl": "/__eei/signia-birthdays",
+    "timezone": "America/Mexico_City",
+    "showOncePerDay": true,
+    "toastDurationMs": 9500,
+    "mockBirthdays": [
+      {
+        "id": 123,
+        "name": "Nombre Apellido",
+        "puesto": "Docente",
+        "plantel": "Plantel Centro",
+        "cumpleanos": "06-30"
+      }
+    ]
+  },
+  "festivities": {
+    "christmas": {
+      "enabled": false,
+      "intensity": 0.82,
+      "wind": 0.55
+    },
+    "new_year": {
+      "enabled": false,
+      "intensity": 0.75
+    },
+    "mundial_2026": {
+      "enabled": false,
+      "intensity": 0.72,
+      "sportsApiUrl": "/__eei/mock-worldcup-matches",
+      "priorityTeam": "Mexico"
+    }
+  },
+  "assets": {
+    "ambassadors": {
+      "birthday": "ambassadors/birthday-ambassador.png",
+      "birthdayAlternate": "ambassadors/birthday-joy-ambassador.png",
+      "sports": "ambassadors/sports-ambassador.png",
+      "winter": "ambassadors/winter-ambassador.png",
+      "maintenance": "ambassadors/maintenance-ambassador.png",
+      "newYear": "ambassadors/new-year-ambassador.png"
+    },
+    "textures": {
+      "trionda": "textures/trionda-equirectangular.png",
+      "balloons": "textures/balloon-atlas.png",
+      "particles": "textures/particle-atlas.png"
+    }
+  }
+}
