@@ -1,4 +1,4 @@
-name = "eei"
+name = "enterprise-experience-injector"
 main = "src/worker.js"
 compatibility_date = "2026-06-30"
 
