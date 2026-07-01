@@ -4,3 +4,5 @@ node_modules/
 dist/
 *.log
 ambassador-contact-sheet.png
+
+*.zip
