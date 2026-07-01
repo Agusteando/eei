@@ -1,16 +1,19 @@
 import * as THREE from "./vendor/three.module.js";
 
-const EEI_VERSION = "0.6.0";
+const EEI_VERSION = "0.8.0";
 const MAX_Z_INDEX = "2147483647";
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
 export const DEFAULT_CONFIG = {
-  version: 6,
+  version: 8,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
     maxPixelRatio: 1.5,
     pauseWhenHidden: true
+  },
+  injection: {
+    excludeHostnamesExact: []
   },
   campaigns: {
     isv: {
@@ -44,7 +47,8 @@ export const DEFAULT_CONFIG = {
     },
     new_year: {
       enabled: false,
-      intensity: 0.75
+      intensity: 0.75,
+      durationMs: 14000
     },
     mundial_2026: {
       enabled: false,
@@ -56,7 +60,8 @@ export const DEFAULT_CONFIG = {
       ballCount: 4,
       ballLifetimeMs: 18000,
       ballAutoExitAfterMs: 10500,
-      ballInteraction: true
+      ballInteraction: true,
+      ballDrag: true
     }
   },
   assets: {
@@ -744,13 +749,29 @@ class BirthdayModule {
 
     this.markShown(date);
     this.release(birthdays);
-    this.engine.showToast("birthday", {
-      eyebrow: "Cumpleanos de hoy",
-      title: birthdays.length === 1 ? "Celebremos a nuestro equipo" : "Celebremos a nuestro equipo",
-      message: birthdays.length === 1 ? "Hoy celebramos una historia que suma a la comunidad." : `Hoy celebramos ${birthdays.length} historias dentro de la comunidad.`,
-      people: birthdays,
-      image: this.engine.assetUrl("ambassadors", "birthday"),
-      durationMs: config.toastDurationMs || 9500
+    this.announceBirthdays(birthdays, config);
+  }
+
+  announceBirthdays(birthdays, config = {}) {
+    const people = Array.isArray(birthdays) ? birthdays.slice(0, 12) : [];
+    const duration = Math.max(4200, Number(config.toastDurationMs || 6500));
+    const gap = Math.min(5200, Math.max(2600, duration - 1400));
+    people.forEach((person, index) => {
+      window.setTimeout(() => {
+        if (!this.active) {
+          return;
+        }
+        const name = person.name || "Colaborador";
+        const detail = [person.puesto, person.plantel].filter(Boolean).join(" · ");
+        this.engine.showToast(`birthday-${cssEscape(String(person.id || index))}`, {
+          eyebrow: "Cumpleaños de hoy",
+          title: `Hoy celebramos a ${name}`,
+          message: detail || "Gracias por ser parte de la comunidad.",
+          people: [],
+          image: this.engine.assetUrl("ambassadors", index % 2 ? "birthdayAlternate" : "birthday"),
+          durationMs: duration
+        });
+      }, index * gap);
     });
   }
 
@@ -999,13 +1020,6 @@ class SnowModule {
     this.engine.scene.add(this.group);
     this.snowMap = this.engine.getParticleAtlasTile(3);
     this.createLayers();
-    this.engine.showToast("winter", {
-      eyebrow: "Temporada",
-      title: "Ambiente de invierno",
-      message: "La experiencia visual de temporada esta activa.",
-      image: this.engine.assetUrl("ambassadors", "winter"),
-      durationMs: 5200
-    });
   }
 
   createLayers() {
@@ -1102,37 +1116,40 @@ class FireworksModule {
     this.timer = 0;
     this.config = {};
     this.sparkMap = null;
+    this.startedAt = 0;
+    this.spawning = false;
+    this.completed = false;
   }
 
   setEnabled(enabled, config = {}) {
     this.config = config;
     if (!enabled) {
-      this.stop();
+      this.stop({ reset: true });
       return;
     }
-    if (!this.active) {
-      this.start();
+    if (this.active || this.completed) {
+      return;
     }
+    this.start();
   }
 
   start() {
     this.active = true;
+    this.completed = false;
+    this.spawning = true;
+    this.startedAt = performance.now();
     this.group = new THREE.Group();
     this.group.name = "EEI Fireworks";
     this.engine.scene.add(this.group);
     this.sparkMap = this.engine.getParticleAtlasTile(2);
     this.timer = 0;
-    this.engine.showToast("new-year", {
-      eyebrow: "Celebracion",
-      title: "Nuevo ciclo en marcha",
-      message: "La capa de fuegos artificiales esta activa.",
-      image: this.engine.assetUrl("ambassadors", "newYear"),
-      durationMs: 5200
-    });
   }
 
   spawnBurst() {
-    const count = Math.round(90 + 90 * Number(this.config.intensity || 0.75));
+    if (!this.spawning) {
+      return;
+    }
+    const count = Math.round(70 + 70 * Number(this.config.intensity || 0.75));
     const positions = new Float32Array(count * 3);
     const velocities = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
@@ -1165,7 +1182,7 @@ class FireworksModule {
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     const material = new THREE.PointsMaterial({
-      size: 18,
+      size: 16,
       vertexColors: true,
       map: this.sparkMap,
       transparent: true,
@@ -1175,7 +1192,7 @@ class FireworksModule {
     });
     const points = new THREE.Points(geometry, material);
     this.group.add(points);
-    this.bursts.push({ points, positions, velocities, age: 0, life: randomBetween(1.35, 2.2) });
+    this.bursts.push({ points, positions, velocities, age: 0, life: randomBetween(1.15, 1.9) });
   }
 
   update(dt) {
@@ -1183,10 +1200,15 @@ class FireworksModule {
       return;
     }
 
+    const durationMs = Math.max(2500, Number(this.config.durationMs || DEFAULT_CONFIG.festivities.new_year.durationMs || 14000));
+    if (performance.now() - this.startedAt >= durationMs) {
+      this.spawning = false;
+    }
+
     this.timer -= dt;
-    if (this.timer <= 0) {
+    if (this.spawning && this.timer <= 0) {
       this.spawnBurst();
-      this.timer = randomBetween(0.55, 1.2);
+      this.timer = randomBetween(0.65, 1.35);
     }
 
     for (let burstIndex = this.bursts.length - 1; burstIndex >= 0; burstIndex -= 1) {
@@ -1212,14 +1234,23 @@ class FireworksModule {
         this.bursts.splice(burstIndex, 1);
       }
     }
+
+    if (!this.spawning && this.bursts.length === 0) {
+      this.stop({ completed: true });
+    }
   }
 
-  stop() {
-    if (!this.active) {
+  stop({ completed = false, reset = false } = {}) {
+    if (!this.active && !this.group) {
+      if (reset) {
+        this.completed = false;
+      }
       return;
     }
 
     this.active = false;
+    this.spawning = false;
+    this.completed = completed ? true : reset ? false : this.completed;
     if (this.group) {
       this.engine.scene.remove(this.group);
       disposeObject3D(this.group);
@@ -1242,7 +1273,10 @@ class MundialModule {
     this.config = {};
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
+    this.drag = null;
     this.handlePointerDown = this.handlePointerDown.bind(this);
+    this.handlePointerMove = this.handlePointerMove.bind(this);
+    this.handlePointerUp = this.handlePointerUp.bind(this);
   }
 
   setEnabled(enabled, config = {}) {
@@ -1268,7 +1302,7 @@ class MundialModule {
     this.geometry = new THREE.SphereGeometry(1, 48, 24);
     this.material = new THREE.MeshStandardMaterial({
       map: texture,
-      roughness: 0.5,
+      roughness: 0.55,
       metalness: 0.02
     });
 
@@ -1298,12 +1332,12 @@ class MundialModule {
 
     const width = this.engine.size.width;
     const height = this.engine.size.height;
-    const radius = randomBetween(22, 36);
+    const radius = randomBetween(22, 34);
     const mesh = new THREE.Mesh(this.geometry, this.material);
     mesh.scale.setScalar(radius);
     mesh.position.set(
       randomBetween(-width / 2 + radius, width / 2 - radius),
-      height / 2 + radius + index * randomBetween(10, 34),
+      height / 2 + radius + index * randomBetween(12, 42),
       randomBetween(-60, 220)
     );
 
@@ -1317,8 +1351,9 @@ class MundialModule {
     mesh.userData.autoExitAt = bornAt + autoExitMs + index * randomBetween(700, 1600);
     mesh.userData.removeAt = bornAt + lifetimeMs + index * randomBetween(300, 900);
     mesh.userData.exiting = false;
-    mesh.userData.velocity = new THREE.Vector2(randomBetween(-110, 110), randomBetween(-80, 40));
-    mesh.userData.angularVelocity = new THREE.Vector3(randomBetween(-2, 2), randomBetween(-3, 3), randomBetween(-2, 2));
+    mesh.userData.dragging = false;
+    mesh.userData.velocity = new THREE.Vector2(randomBetween(-70, 70), randomBetween(-55, 15));
+    mesh.userData.angularVelocity = new THREE.Vector3(randomBetween(-1.3, 1.3), randomBetween(-2, 2), randomBetween(-1.3, 1.3));
     this.balls.push(mesh);
     this.group.add(mesh);
   }
@@ -1351,12 +1386,8 @@ class MundialModule {
       return;
     }
 
-    const width = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
-    const height = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
-    this.pointer.set((event.clientX / width) * 2 - 1, -(event.clientY / height) * 2 + 1);
-    this.raycaster.setFromCamera(this.pointer, this.engine.camera);
-    const intersects = this.raycaster.intersectObjects(this.balls.filter((ball) => !ball.userData.removed), false);
-    if (!intersects.length) {
+    const ball = this.pickBall(event);
+    if (!ball) {
       return;
     }
 
@@ -1364,11 +1395,110 @@ class MundialModule {
     event.stopImmediatePropagation?.();
     event.stopPropagation();
 
-    const ball = intersects[0].object;
-    const hit = intersects[0].point;
-    const horizontal = ball.position.x >= 0 ? 1 : -1;
-    const vertical = hit.y <= ball.position.y ? 1 : randomBetween(0.2, 1);
-    this.kickBall(ball, new THREE.Vector2(horizontal, vertical).normalize(), 1900);
+    const world = this.clientToWorld(event.clientX, event.clientY);
+    ball.userData.dragging = true;
+    ball.userData.velocity.set(0, 0);
+    ball.userData.angularVelocity.multiplyScalar(0.35);
+    this.drag = {
+      ball,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastClientX: event.clientX,
+      lastClientY: event.clientY,
+      lastX: world.x,
+      lastY: world.y,
+      lastAt: performance.now(),
+      moved: false,
+      offsetX: ball.position.x - world.x,
+      offsetY: ball.position.y - world.y
+    };
+
+    document.addEventListener("pointermove", this.handlePointerMove, { capture: true, passive: false });
+    document.addEventListener("pointerup", this.handlePointerUp, { capture: true, passive: false });
+    document.addEventListener("pointercancel", this.handlePointerUp, { capture: true, passive: false });
+  }
+
+  handlePointerMove(event) {
+    if (!this.drag || event.pointerId !== this.drag.pointerId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation?.();
+    event.stopPropagation();
+
+    const now = performance.now();
+    const world = this.clientToWorld(event.clientX, event.clientY);
+    const ball = this.drag.ball;
+    const dtMs = Math.max(8, now - this.drag.lastAt);
+    const nextX = world.x + this.drag.offsetX;
+    const nextY = world.y + this.drag.offsetY;
+    const dx = nextX - ball.position.x;
+    const dy = nextY - ball.position.y;
+
+    ball.position.x = nextX;
+    ball.position.y = nextY;
+    ball.userData.velocity.set((world.x - this.drag.lastX) / dtMs * 1000, (world.y - this.drag.lastY) / dtMs * 1000);
+    ball.userData.angularVelocity.x += dy * 0.006;
+    ball.userData.angularVelocity.y += dx * 0.006;
+
+    if (Math.hypot(event.clientX - this.drag.startX, event.clientY - this.drag.startY) > 8) {
+      this.drag.moved = true;
+    }
+
+    this.drag.lastClientX = event.clientX;
+    this.drag.lastClientY = event.clientY;
+    this.drag.lastX = world.x;
+    this.drag.lastY = world.y;
+    this.drag.lastAt = now;
+  }
+
+  handlePointerUp(event) {
+    if (!this.drag || event.pointerId !== this.drag.pointerId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation?.();
+    event.stopPropagation();
+
+    const { ball, moved } = this.drag;
+    if (ball && !ball.userData.removed) {
+      ball.userData.dragging = false;
+      if (!moved) {
+        const world = this.clientToWorld(event.clientX, event.clientY);
+        const direction = new THREE.Vector2(ball.position.x - world.x, ball.position.y - world.y + 40);
+        if (direction.lengthSq() < 0.01) {
+          direction.set(ball.position.x >= 0 ? 1 : -1, 0.72);
+        }
+        this.kickBall(ball, direction.normalize(), 2050);
+      } else {
+        const velocity = ball.userData.velocity;
+        velocity.x = clamp(velocity.x, -1600, 1600);
+        velocity.y = clamp(velocity.y, -1200, 1200);
+      }
+    }
+
+    this.drag = null;
+    document.removeEventListener("pointermove", this.handlePointerMove, { capture: true });
+    document.removeEventListener("pointerup", this.handlePointerUp, { capture: true });
+    document.removeEventListener("pointercancel", this.handlePointerUp, { capture: true });
+  }
+
+  pickBall(event) {
+    const width = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
+    const height = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+    this.pointer.set((event.clientX / width) * 2 - 1, -(event.clientY / height) * 2 + 1);
+    this.raycaster.setFromCamera(this.pointer, this.engine.camera);
+    const intersects = this.raycaster.intersectObjects(this.balls.filter((ball) => !ball.userData.removed), false);
+    return intersects.length ? intersects[0].object : null;
+  }
+
+  clientToWorld(clientX, clientY) {
+    const width = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
+    const height = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+    return new THREE.Vector2(clientX - width / 2, height / 2 - clientY);
   }
 
   kickBall(ball, direction = null, strength = 1500) {
@@ -1378,11 +1508,12 @@ class MundialModule {
 
     const dir = direction || new THREE.Vector2(randomBetween(-1, 1), randomBetween(0.45, 1)).normalize();
     const velocity = ball.userData.velocity;
-    velocity.x = dir.x * strength + randomBetween(-180, 180);
-    velocity.y = Math.abs(dir.y * strength) + randomBetween(220, 520);
+    velocity.x = dir.x * strength + randomBetween(-120, 120);
+    velocity.y = dir.y * strength + randomBetween(80, 260);
     ball.userData.exiting = true;
-    ball.userData.removeAt = performance.now() + 3800;
-    ball.userData.angularVelocity.multiplyScalar(3.5);
+    ball.userData.dragging = false;
+    ball.userData.removeAt = performance.now() + 4200;
+    ball.userData.angularVelocity.multiplyScalar(4.2);
   }
 
   update(dt) {
@@ -1394,51 +1525,59 @@ class MundialModule {
     const gravity = -980;
     const width = this.engine.size.width;
     const height = this.engine.size.height;
-    const restitution = 0.82;
-    const floorFriction = 0.84;
-    const airDrag = Math.pow(0.992, dt * 60);
+    const wallRestitution = 0.68;
+    const floorRestitution = 0.48;
+    const floorFriction = 0.78;
+    const airDrag = Math.pow(0.989, dt * 60);
 
     for (const ball of [...this.balls]) {
       if (ball.userData.removed) {
         continue;
       }
 
-      if (!ball.userData.exiting && now >= ball.userData.autoExitAt) {
-        const direction = new THREE.Vector2(ball.position.x >= 0 ? 1 : -1, randomBetween(0.25, 0.95)).normalize();
-        this.kickBall(ball, direction, randomBetween(1250, 1650));
+      if (!ball.userData.exiting && !ball.userData.dragging && now >= ball.userData.autoExitAt) {
+        const direction = new THREE.Vector2(ball.position.x >= 0 ? 1 : -1, randomBetween(0.35, 0.9)).normalize();
+        this.kickBall(ball, direction, randomBetween(1320, 1680));
       }
 
       const velocity = ball.userData.velocity;
       const radius = ball.userData.radius;
-      velocity.y += gravity * dt;
-      velocity.multiplyScalar(airDrag);
-      ball.position.x += velocity.x * dt;
-      ball.position.y += velocity.y * dt;
+
+      if (!ball.userData.dragging) {
+        velocity.y += gravity * dt;
+        velocity.multiplyScalar(airDrag);
+        ball.position.x += velocity.x * dt;
+        ball.position.y += velocity.y * dt;
+      }
 
       const left = -width / 2 + radius;
       const right = width / 2 - radius;
       const bottom = -height / 2 + radius + 8;
       const top = height / 2 - radius;
 
-      if (!ball.userData.exiting) {
+      if (!ball.userData.exiting && !ball.userData.dragging) {
         if (ball.position.x < left) {
           ball.position.x = left;
-          velocity.x = Math.abs(velocity.x) * restitution;
+          velocity.x = Math.abs(velocity.x) * wallRestitution;
         } else if (ball.position.x > right) {
           ball.position.x = right;
-          velocity.x = -Math.abs(velocity.x) * restitution;
+          velocity.x = -Math.abs(velocity.x) * wallRestitution;
         }
 
         if (ball.position.y < bottom) {
           ball.position.y = bottom;
-          velocity.y = Math.abs(velocity.y) * randomBetween(0.66, 0.82);
+          if (Math.abs(velocity.y) > 42) {
+            velocity.y = Math.abs(velocity.y) * floorRestitution;
+          } else {
+            velocity.y = 0;
+          }
           velocity.x *= floorFriction;
-          if (Math.abs(velocity.y) < 90) {
-            velocity.y += randomBetween(90, 180);
+          if (Math.abs(velocity.x) < 10) {
+            velocity.x = 0;
           }
         } else if (ball.position.y > top) {
           ball.position.y = top;
-          velocity.y = -Math.abs(velocity.y) * 0.35;
+          velocity.y = -Math.abs(velocity.y) * 0.22;
         }
       }
 
@@ -1446,7 +1585,10 @@ class MundialModule {
       ball.rotation.x += angularVelocity.x * dt + velocity.y * dt * 0.004;
       ball.rotation.y += angularVelocity.y * dt + velocity.x * dt * 0.004;
       ball.rotation.z += angularVelocity.z * dt;
-      angularVelocity.multiplyScalar(Math.pow(0.992, dt * 60));
+      angularVelocity.multiplyScalar(Math.pow(0.988, dt * 60));
+      if (!ball.userData.dragging && Math.abs(velocity.x) < 0.1 && Math.abs(velocity.y) < 0.1) {
+        angularVelocity.multiplyScalar(Math.pow(0.92, dt * 60));
+      }
 
       const outsideMargin = Math.max(180, radius * 6);
       const outside = ball.position.x < -width / 2 - outsideMargin || ball.position.x > width / 2 + outsideMargin || ball.position.y < -height / 2 - outsideMargin || ball.position.y > height / 2 + outsideMargin;
@@ -1459,7 +1601,7 @@ class MundialModule {
   }
 
   resolveBallCollisions() {
-    const balls = this.balls.filter((ball) => !ball.userData.removed && !ball.userData.exiting);
+    const balls = this.balls.filter((ball) => !ball.userData.removed && !ball.userData.exiting && !ball.userData.dragging);
     for (let i = 0; i < balls.length; i += 1) {
       for (let j = i + 1; j < balls.length; j += 1) {
         const a = balls[i];
@@ -1493,7 +1635,7 @@ class MundialModule {
           continue;
         }
 
-        const restitution = 0.78;
+        const restitution = 0.62;
         const impulse = -(1 + restitution) * velocityAlongNormal / (1 / aMass + 1 / bMass);
         const impulseX = impulse * nx;
         const impulseY = impulse * ny;
@@ -1525,6 +1667,10 @@ class MundialModule {
 
     this.active = false;
     document.removeEventListener("pointerdown", this.handlePointerDown, { capture: true });
+    document.removeEventListener("pointermove", this.handlePointerMove, { capture: true });
+    document.removeEventListener("pointerup", this.handlePointerUp, { capture: true });
+    document.removeEventListener("pointercancel", this.handlePointerUp, { capture: true });
+    this.drag = null;
     this.engine.clearWorldCupWidget();
     if (this.group) {
       this.engine.scene.remove(this.group);

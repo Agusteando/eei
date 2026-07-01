@@ -517,6 +517,22 @@
           </div>
         </section>
 
+        <section class="card tight">
+          <div class="card-head">
+            <div>
+              <h2>Subdominios bloqueados</h2>
+              <p>Sin comodines. Uno exacto por línea. Estos hosts no reciben ningún efecto.</p>
+            </div>
+          </div>
+          <div class="body field-stack">
+            <label class="field">Bloquear efectos en
+              <textarea id="globalBlockedHostnames" spellcheck="false" placeholder="ejemplo.casitaapps.com
+aurora.casitaiedis.edu.mx"></textarea>
+            </label>
+            <p class="micro">No uses <strong>*</strong>. Si escribes un wildcard, se ignora.</p>
+          </div>
+        </section>
+
         <section class="card">
           <div class="card-head">
             <div>
@@ -584,6 +600,24 @@
           </div>
         </section>
 
+        <section class="card tight">
+          <div class="card-head">
+            <div>
+              <h2>Debug APIs</h2>
+              <p>Revisa respuestas reales de cumpleaños y Mundial.</p>
+            </div>
+            <span class="pill" id="debugPill">Sin probar</span>
+          </div>
+          <div class="body field-stack">
+            <div class="actions three">
+              <button class="btn secondary" type="button" id="debugBirthdayBtn">Ver API cumpleaños</button>
+              <button class="btn secondary" type="button" id="debugMundialBtn">Ver API Mundial</button>
+              <button class="btn ghost" type="button" id="clearDebugBtn">Limpiar debug</button>
+            </div>
+            <pre class="debug-output" id="debugOutput">Pulsa un botón para ver status, endpoint y JSON recibido.</pre>
+          </div>
+        </section>
+
         <section class="card">
           <div class="card-head">
             <div>
@@ -598,6 +632,9 @@
               </label>
               <label class="field">Equipo prioritario Mundial
                 <input type="text" data-bind="festivities.mundial_2026.priorityTeam" placeholder="Mexico">
+              </label>
+              <label class="field">Duración fuegos artificiales (ms)
+                <input type="number" min="2500" step="500" data-bind="festivities.new_year.durationMs" placeholder="14000">
               </label>
             </div>
             <label class="field">Mensaje mantenimiento
@@ -655,7 +692,7 @@
   </nav>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v6";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v8";
 
     const TOKEN_STORAGE_KEY = "eei:adminToken";
     const REMEMBER_STORAGE_KEY = "eei:rememberToken";
@@ -686,10 +723,16 @@
       previewBirthdayBtn: document.getElementById("previewBirthdayBtn"),
       previewMundialBtn: document.getElementById("previewMundialBtn"),
       clearPreviewBtn: document.getElementById("clearPreviewBtn"),
+      debugBirthdayBtn: document.getElementById("debugBirthdayBtn"),
+      debugMundialBtn: document.getElementById("debugMundialBtn"),
+      clearDebugBtn: document.getElementById("clearDebugBtn"),
+      debugPill: document.getElementById("debugPill"),
+      debugOutput: document.getElementById("debugOutput"),
       applyJsonBtn: document.getElementById("applyJsonBtn"),
       formatJsonBtn: document.getElementById("formatJsonBtn"),
       isvIncludeHostnames: document.getElementById("isvIncludeHostnames"),
-      isvExcludeHostnames: document.getElementById("isvExcludeHostnames")
+      isvExcludeHostnames: document.getElementById("isvExcludeHostnames"),
+      globalBlockedHostnames: document.getElementById("globalBlockedHostnames")
     };
 
     boot();
@@ -731,6 +774,15 @@
       refs.previewBirthdayBtn.addEventListener("click", previewBirthday);
       refs.previewMundialBtn.addEventListener("click", previewMundial);
       refs.clearPreviewBtn.addEventListener("click", clearPreview);
+      refs.debugBirthdayBtn.addEventListener("click", () => debugApi("birthday"));
+      refs.debugMundialBtn.addEventListener("click", () => debugApi("mundial"));
+      refs.clearDebugBtn.addEventListener("click", clearDebug);
+      refs.globalBlockedHostnames.addEventListener("input", () => {
+        ensureInjectionConfig();
+        state.injection.excludeHostnamesExact = parseExactHostList(refs.globalBlockedHostnames.value);
+        markDirty();
+        render();
+      });
       refs.isvIncludeHostnames.addEventListener("input", () => {
         ensureIsvConfig();
         state.campaigns.isv.includeHostnames = parseHostList(refs.isvIncludeHostnames.value);
@@ -886,6 +938,62 @@
       setStatus("Preview limpio", "ok");
     }
 
+    async function debugApi(kind) {
+      const today = todayInTimeZone("America/Mexico_City");
+      const endpoint = kind === "birthday"
+        ? "/__eei/signia-birthdays?debug=1"
+        : `/__eei/worldcup-matches?debug=1&date=${encodeURIComponent(today)}`;
+      refs.debugPill.textContent = "Probando";
+      refs.debugPill.className = "pill";
+      refs.debugOutput.textContent = `GET ${endpoint}
+Cargando...`;
+      try {
+        const response = await fetch(endpoint, {
+          cache: "no-store",
+          credentials: "same-origin",
+          headers: { Accept: "application/json" }
+        });
+        const text = await response.text();
+        let payload;
+        try {
+          payload = JSON.parse(text);
+        } catch {
+          payload = text;
+        }
+        refs.debugPill.textContent = response.ok ? "OK" : `HTTP ${response.status}`;
+        refs.debugPill.className = `pill ${response.ok ? "on" : ""}`;
+        refs.debugOutput.textContent = JSON.stringify({
+          endpoint,
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          receivedAt: new Date().toISOString(),
+          payload
+        }, null, 2);
+      } catch (error) {
+        refs.debugPill.textContent = "Error";
+        refs.debugPill.className = "pill";
+        refs.debugOutput.textContent = JSON.stringify({ endpoint, error: error.message }, null, 2);
+      }
+    }
+
+    function clearDebug() {
+      refs.debugPill.textContent = "Sin probar";
+      refs.debugPill.className = "pill";
+      refs.debugOutput.textContent = "Pulsa un botón para ver status, endpoint y JSON recibido.";
+    }
+
+    function todayInTimeZone(timeZone) {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).formatToParts(new Date());
+      const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+      return `${byType.year}-${byType.month}-${byType.day}`;
+    }
+
     function applyJson() {
       try {
         const payload = JSON.parse(refs.jsonEditor.value);
@@ -901,6 +1009,7 @@
 
     function render() {
       syncControls();
+      refs.globalBlockedHostnames.value = formatHostList(state.injection?.excludeHostnamesExact);
       refs.isvIncludeHostnames.value = formatHostList(state.campaigns?.isv?.includeHostnames);
       refs.isvExcludeHostnames.value = formatHostList(state.campaigns?.isv?.excludeHostnames);
       refs.jsonEditor.value = JSON.stringify(state, null, 2);
@@ -949,6 +1058,17 @@
         .split(/[\n,]/)
         .map((item) => item.trim().toLowerCase())
         .filter(Boolean);
+    }
+
+    function parseExactHostList(value) {
+      return parseHostList(value).filter((item) => !item.includes("*"));
+    }
+
+    function ensureInjectionConfig() {
+      state.injection = state.injection || {};
+      if (!Array.isArray(state.injection.excludeHostnamesExact)) {
+        state.injection.excludeHostnamesExact = [];
+      }
     }
 
     function ensureIsvConfig() {

@@ -1,9 +1,17 @@
-EEI unified configurable gateway v6
+# Commit sugerido
 
-- Removes hardcoded ISV hostname exclusions.
-- Adds configurable ISV include/exclude host lists in admin UI.
-- Empty include list means ISV applies to every hostname routed to eei.
-- Supports exact hosts and wildcard patterns such as *.casitaapps.com.
-- Bumps engine/cache to 2026-07-01-v6 / 0.6.0 / config version 6.
+```bash
+git add .
+git commit -m "Refina debug de APIs y anuncios EEI"
+git push
+```
 
-Deployment target remains Worker name: eei.
+Validar después de deploy:
+
+- Abrir `/eei-admin.html?v=2026-07-01-v8`.
+- Usar Debug APIs → Ver API cumpleaños.
+- Usar Debug APIs → Ver API Mundial.
+- Confirmar que las respuestas muestran `payload`, status HTTP y endpoint.
+- Confirmar que Año Nuevo no muestra toast.
+- Confirmar que cumpleaños muestra anuncios individuales.
+```

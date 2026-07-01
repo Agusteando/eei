@@ -1,9 +1,12 @@
-EEI unified configurable gateway v6
+# EEI v8 — debug APIs y anuncios limpios
 
-- Removes hardcoded ISV hostname exclusions.
-- Adds configurable ISV include/exclude host lists in admin UI.
-- Empty include list means ISV applies to every hostname routed to eei.
-- Supports exact hosts and wildcard patterns such as *.casitaapps.com.
-- Bumps engine/cache to 2026-07-01-v6 / 0.6.0 / config version 6.
+Cambios principales:
 
-Deployment target remains Worker name: eei.
+- El Worker sigue usando `football-data.org` con competencia `WC` para FIFA World Cup.
+- Corrige el rango de fecha de Mundial: `dateTo` se manda como el día siguiente porque Football-Data excluye `dateTo`.
+- Agrega debug visual en el admin para ver la respuesta real de `/__eei/signia-birthdays` y `/__eei/worldcup-matches`.
+- Quita toasts genéricos de Navidad/Año Nuevo. Los fuegos artificiales simplemente aparecen y terminan.
+- Cumpleaños ahora anuncia a cada persona una por una, con su nombre.
+- El filtro de cumpleaños ya no trata entradas sin fecha o fecha inválida como cumpleaños.
+
+Versión: `2026-07-01-v8` / engine `0.8.0`.

@@ -1,5 +1,5 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v6";
+const EEI_ASSET_VERSION = "2026-07-01-v8";
 const ISV_DEFAULT_SCRIPT_URL = "https://isv-ev2.pages.dev/isv-banner.js";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const FOOTBALL_DATA_DEFAULT_BASE_URL = "https://api.football-data.org/v4";
@@ -7,12 +7,15 @@ const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 6,
+  version: 8,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
     maxPixelRatio: 1.5,
     pauseWhenHidden: true
+  },
+  injection: {
+    excludeHostnamesExact: []
   },
   campaigns: {
     isv: {
@@ -46,7 +49,8 @@ const DEFAULT_CONFIG = {
     },
     new_year: {
       enabled: false,
-      intensity: 0.75
+      intensity: 0.75,
+      durationMs: 14000
     },
     mundial_2026: {
       enabled: false,
@@ -58,7 +62,8 @@ const DEFAULT_CONFIG = {
       ballCount: 4,
       ballLifetimeMs: 18000,
       ballAutoExitAfterMs: 10500,
-      ballInteraction: true
+      ballInteraction: true,
+      ballDrag: true
     }
   },
   assets: {
@@ -91,7 +96,7 @@ export default {
     }
 
     if (url.pathname === "/__eei/signia-birthdays") {
-      return handleSigniaBirthdays(env);
+      return handleSigniaBirthdays(request, env);
     }
 
     if (url.pathname === "/__eei/worldcup-matches") {
@@ -195,9 +200,10 @@ async function requireAdmin(request, env) {
   return { ok: false, status: 401, error: "Missing or invalid admin token" };
 }
 
-async function handleSigniaBirthdays(env) {
+async function handleSigniaBirthdays(request, env) {
   const endpoint = env.SIGNIA_BIRTHDAY_URL || SIGNIA_DEFAULT_URL;
   const timezone = "America/Mexico_City";
+  const debug = new URL(request.url).searchParams.get("debug") === "1";
   try {
     const upstream = await fetch(endpoint, {
       headers: {
@@ -224,8 +230,16 @@ async function handleSigniaBirthdays(env) {
 
     const payload = await upstream.json().catch(() => null);
     const normalized = normalizeBirthdayPayload(payload, timezone);
-    return json(normalized, {
-      "Cache-Control": "public, max-age=120"
+    return json(debug ? {
+      ...normalized,
+      debug: {
+        provider: "signia",
+        providerUrl: endpoint,
+        providerStatus: upstream.status,
+        raw: payload
+      }
+    } : normalized, {
+      "Cache-Control": debug ? "no-store" : "public, max-age=120"
     });
   } catch (error) {
     return json({
@@ -245,7 +259,8 @@ async function handleWorldCupMatches(request, env) {
   const url = new URL(request.url);
   const date = url.searchParams.get("date") || todayInTimeZone(timezone);
   const dateFrom = url.searchParams.get("dateFrom") || date;
-  const dateTo = url.searchParams.get("dateTo") || date;
+  const dateTo = url.searchParams.get("dateTo") || addDaysToDate(dateFrom, 1);
+  const debug = url.searchParams.get("debug") === "1";
 
   if (!token) {
     return json({
@@ -312,9 +327,21 @@ async function handleWorldCupMatches(request, env) {
       competition,
       season,
       count: matches.length,
-      matches
+      matches,
+      ...(debug ? {
+        debug: {
+          providerUrl: upstreamUrl.toString(),
+          providerStatus: upstream.status,
+          providerHeaders: {
+            apiVersion: upstream.headers.get("X-API-Version") || "",
+            requestsAvailable: upstream.headers.get("X-RequestsAvailable") || "",
+            requestCounterReset: upstream.headers.get("X-RequestCounter-Reset") || ""
+          },
+          raw: payload
+        }
+      } : {})
     }, {
-      "Cache-Control": "public, max-age=300"
+      "Cache-Control": debug ? "no-store" : "public, max-age=300"
     });
   } catch (error) {
     return json({
@@ -448,8 +475,16 @@ function escapeHtmlAttribute(value) {
 
 function routeAllowed(request, config) {
   const url = new URL(request.url);
+  const hostname = url.hostname.toLowerCase();
   const path = url.pathname;
   const injection = config.injection || {};
+
+  const excludedHosts = Array.isArray(injection.excludeHostnamesExact)
+    ? injection.excludeHostnamesExact.map((host) => String(host || "").trim().toLowerCase()).filter(Boolean)
+    : [];
+  if (excludedHosts.includes(hostname)) {
+    return false;
+  }
 
   if (Array.isArray(injection.excludePaths) && injection.excludePaths.some((prefix) => path.startsWith(prefix))) {
     return false;
@@ -545,7 +580,17 @@ function deepMerge(base, override) {
 function normalizeRuntimeConfig(config) {
   const output = structuredClone(config);
   const storedVersion = Number(output.version || 0);
-  output.version = Math.max(6, storedVersion || 0);
+  output.version = Math.max(8, storedVersion || 0);
+
+  if (!output.injection || typeof output.injection !== "object") {
+    output.injection = structuredClone(DEFAULT_CONFIG.injection);
+  }
+  if (!Array.isArray(output.injection.excludeHostnamesExact)) {
+    output.injection.excludeHostnamesExact = [];
+  }
+  output.injection.excludeHostnamesExact = output.injection.excludeHostnamesExact
+    .map((host) => String(host || "").trim().toLowerCase())
+    .filter((host) => host && !host.includes("*"));
 
   if (!output.campaigns || typeof output.campaigns !== "object") {
     output.campaigns = structuredClone(DEFAULT_CONFIG.campaigns);
@@ -569,6 +614,12 @@ function normalizeRuntimeConfig(config) {
       output.festivities.mundial_2026.sportsApiUrl = "/__eei/worldcup-matches";
     }
 
+    if (output.festivities.new_year && typeof output.festivities.new_year === "object") {
+      if (!Number.isFinite(Number(output.festivities.new_year.durationMs))) {
+        output.festivities.new_year.durationMs = DEFAULT_CONFIG.festivities.new_year.durationMs;
+      }
+    }
+
     if (storedVersion < 3) {
       output.festivities.mundial_2026.intensity = 0.42;
       output.festivities.mundial_2026.compactPin = true;
@@ -577,6 +628,7 @@ function normalizeRuntimeConfig(config) {
       output.festivities.mundial_2026.ballLifetimeMs = 18000;
       output.festivities.mundial_2026.ballAutoExitAfterMs = 10500;
       output.festivities.mundial_2026.ballInteraction = true;
+      output.festivities.mundial_2026.ballDrag = true;
     }
   }
   if (output?.birthday && !Array.isArray(output.birthday.mockBirthdays)) {
@@ -620,14 +672,14 @@ function normalizeBirthdayPerson(person) {
     name: person.name || person.nombre || person.fullName || person.nombreCompleto || "Colaborador",
     puesto: person.puesto || person.position || person.cargo || person.title || "",
     plantel: person.plantel || person.campus || person.school || person.sede || "",
-    cumpleanos: person.cumpleanos || person.birthday || person.birthdate || person.fechaNacimiento || ""
+    cumpleanos: person.cumpleanos || person.birthday || person.birthdate || person.fechaNacimiento || person.fecha_nacimiento || person.dateOfBirth || person.birthDate || ""
   };
 }
 
 function birthdayEntryMatchesToday(person, today) {
-  const value = person.cumpleanos || person.birthday || person.birthdate || person.fechaNacimiento || person.date || "";
+  const value = person.cumpleanos || person.birthday || person.birthdate || person.fechaNacimiento || person.fecha_nacimiento || person.dateOfBirth || person.birthDate || person.date || "";
   if (!value) {
-    return true;
+    return false;
   }
 
   const normalized = String(value).trim();
@@ -638,11 +690,13 @@ function birthdayEntryMatchesToday(person, today) {
   if (/^\d{4}-\d{2}-\d{2}/.test(normalized)) {
     return normalized.slice(5, 10) === monthDay;
   }
-  if (/^\d{2}\/\d{2}(?:\/\d{4})?$/.test(normalized)) {
+  if (/^\d{2}\/\d{2}(?:\/\d{2,4})?$/.test(normalized)) {
     const [first, second] = normalized.split("/");
-    return `${first.padStart(2, "0")}-${second.padStart(2, "0")}` === monthDay;
+    const firstPadded = first.padStart(2, "0");
+    const secondPadded = second.padStart(2, "0");
+    return `${firstPadded}-${secondPadded}` === monthDay || `${secondPadded}-${firstPadded}` === monthDay;
   }
-  return true;
+  return false;
 }
 
 function normalizeFootballDataMatches(matches, timeZone) {
@@ -724,4 +778,13 @@ function todayInTimeZone(timeZone) {
 
   const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${byType.year}-${byType.month}-${byType.day}`;
+}
+
+function addDaysToDate(date, days) {
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return date;
+  }
+  parsed.setUTCDate(parsed.getUTCDate() + days);
+  return parsed.toISOString().slice(0, 10);
 }
