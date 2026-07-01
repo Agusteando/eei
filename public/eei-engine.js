@@ -1,11 +1,11 @@
 import * as THREE from "./vendor/three.module.js";
 
-const EEI_VERSION = "0.21.0";
+const EEI_VERSION = "0.22.0";
 const MAX_Z_INDEX = "2147483647";
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
 export const DEFAULT_CONFIG = {
-  version: 21,
+  version: 22,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -2925,12 +2925,17 @@ if (params.get("autostart") === "1") {
   const endpoint = params.get("config") || window.__EEI_BOOT__?.configEndpoint || "/__eei/config";
   fetch(endpoint, {
     cache: "no-store",
-    credentials: "same-origin",
+    credentials: endpoint.startsWith("http") ? "omit" : "same-origin",
     headers: {
       Accept: "application/json"
     }
   })
-    .then((response) => response.ok ? response.json() : DEFAULT_CONFIG)
-    .catch(() => DEFAULT_CONFIG)
-    .then((config) => startEEI(config, { configEndpoint: endpoint }));
+    .then((response) => {
+      if (!response.ok) throw new Error(`EEI config failed: ${response.status}`);
+      return response.json();
+    })
+    .then((config) => startEEI(config, { configEndpoint: endpoint }))
+    .catch((error) => {
+      console.warn("EEI autostart skipped because config could not be loaded", error);
+    });
 }
