@@ -1,5 +1,5 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v20";
+const EEI_ASSET_VERSION = "2026-07-01-v21";
 const ISV_DEFAULT_SCRIPT_URL = "https://isv-ev2.pages.dev/isv-banner.js";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const SIGNIA_DEFAULT_PLANTELES_URL = "https://signia.casitaapps.com/api/planteles/list";
@@ -8,7 +8,7 @@ const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 20,
+  version: 21,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -98,6 +98,10 @@ export default {
       return handleConfig(request, env);
     }
 
+    if (url.pathname === "/__eei/admin-check") {
+      return handleAdminCheck(request, env);
+    }
+
     if (url.pathname === "/__eei/signia-birthdays") {
       return handleSigniaBirthdays(request, env);
     }
@@ -135,7 +139,8 @@ async function handleConfig(request, env) {
   if (request.method === "GET") {
     const config = await readConfig(env);
     return json(config, {
-      "Cache-Control": "no-store"
+      "Cache-Control": "no-store",
+      "X-EEI-Config-Source": env.EEI_CONFIG ? "kv" : "default"
     });
   }
 
@@ -171,6 +176,20 @@ async function handleConfig(request, env) {
   return json(next, {
     "Cache-Control": "no-store"
   });
+}
+
+async function handleAdminCheck(request, env) {
+  if (request.method === "OPTIONS") {
+    return withCors(new Response(null, { status: 204 }));
+  }
+  if (request.method !== "GET") {
+    return json({ ok: false, error: "Method not allowed" }, {}, 405);
+  }
+  const auth = await requireAdmin(request, env);
+  if (!auth.ok) {
+    return json({ ok: false, error: auth.error }, {}, auth.status);
+  }
+  return json({ ok: true, checkedAt: new Date().toISOString() }, { "Cache-Control": "no-store" });
 }
 
 async function readConfig(env) {
@@ -398,7 +417,7 @@ async function handleWorldCupMatches(request, env) {
   const url = new URL(request.url);
   const date = url.searchParams.get("date") || todayInTimeZone(timezone);
   const dateFrom = url.searchParams.get("dateFrom") || date;
-  const dateTo = url.searchParams.get("dateTo") || addDaysToDate(dateFrom, 1);
+  const dateTo = url.searchParams.get("dateTo") || "";
   const debug = url.searchParams.get("debug") === "1";
 
   if (!token) {
@@ -421,7 +440,9 @@ async function handleWorldCupMatches(request, env) {
   const season = url.searchParams.get("season") || env.FOOTBALL_DATA_SEASON || FOOTBALL_DATA_DEFAULT_SEASON;
   const upstreamUrl = new URL(`${baseUrl.replace(/\/$/, "")}/competitions/${encodeURIComponent(competition)}/matches`);
   upstreamUrl.searchParams.set("dateFrom", dateFrom);
-  upstreamUrl.searchParams.set("dateTo", dateTo);
+  if (dateTo) {
+    upstreamUrl.searchParams.set("dateTo", dateTo);
+  }
   if (season) {
     upstreamUrl.searchParams.set("season", season);
   }
@@ -719,7 +740,7 @@ function deepMerge(base, override) {
 function normalizeRuntimeConfig(config) {
   const output = structuredClone(config);
   const storedVersion = Number(output.version || 0);
-  output.version = Math.max(15, storedVersion || 0);
+  output.version = Math.max(21, storedVersion || 0);
 
   if (!output.injection || typeof output.injection !== "object") {
     output.injection = structuredClone(DEFAULT_CONFIG.injection);

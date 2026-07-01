@@ -1,1 +1,1 @@
-Rebuild EEI admin as coherent product system v20
+Fix EEI admin state contract, diagnostics, and non-stub interactions v21

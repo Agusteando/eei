@@ -432,6 +432,36 @@
     .modal-list { max-height: 380px; overflow: auto; display: grid; gap: 8px; }
 
     .mobile-save { display: none; }
+    .toast {
+      position: fixed;
+      z-index: 80;
+      right: 18px;
+      bottom: 18px;
+      max-width: min(420px, calc(100vw - 36px));
+      min-height: 46px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #10201d;
+      color: #fff;
+      box-shadow: 0 20px 56px rgba(16,32,29,.24);
+      font-size: 13px;
+      font-weight: 820;
+    }
+    .toast.show { display: flex; }
+    .toast.ok { background: var(--primary-dark); }
+    .toast.warn { background: #7a4b10; }
+    .toast.bad { background: #8f2929; }
+    .pill:disabled { opacity: .45; cursor: not-allowed; }
+    .preview-card.flash { animation: eeiPreviewFlash 900ms ease; }
+    @keyframes eeiPreviewFlash {
+      0% { box-shadow: 0 0 0 0 rgba(0,121,107,.0); transform: translateY(0); }
+      20% { box-shadow: 0 0 0 5px rgba(0,121,107,.18); transform: translateY(-1px); }
+      100% { box-shadow: 0 0 0 0 rgba(0,121,107,.0); transform: translateY(0); }
+    }
+
 
     @media (max-width: 1180px) {
       .layout { grid-template-columns: 1fr; }
@@ -601,7 +631,7 @@
               <button class="pill" type="button" id="openHostsBtn">Editar</button>
             </div>
             <div class="card-body">
-              <div class="row"><div><strong id="hostCount">0</strong><span>bloqueados</span></div><span class="pill">exactos</span></div>
+              <div class="row"><div><strong id="hostCount">0</strong><span>hosts y reglas</span></div><span class="pill">config</span></div>
             </div>
           </section>
         </div>
@@ -629,6 +659,8 @@
       </details>
     </main>
   </div>
+
+  <div class="toast" id="toast"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span id="toastText"></span></div>
 
   <div class="mobile-save"><button class="btn" type="button" id="mobileSaveBtn"><i class="fa-regular fa-floppy-disk" aria-hidden="true"></i>Guardar</button></div>
 
@@ -690,7 +722,7 @@
   </dialog>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v20";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v21";
 
     const TOKEN_STORAGE_KEY = "eei:adminToken";
     const REMEMBER_STORAGE_KEY = "eei:rememberToken";
@@ -705,16 +737,19 @@
     let dirty = false;
     let lastSavedAt = null;
     let configLoadedAt = null;
+    let configSource = "unknown";
+    let maintenanceDraft = null;
     const rawPayload = { birthday: null, planteles: null, mundial: null };
     const health = { birthday: null, planteles: null, mundial: null };
     let plantelesCache = [];
+    let toastTimer = null;
 
     const $ = (id) => document.getElementById(id);
     const refs = {
-      loadingTitle: $("loadingTitle"), loadingText: $("loadingText"), retryLoadBtn: $("retryLoadBtn"),
+      loadingTitle: $("loadingTitle"), loadingText: $("loadingText"), retryLoadBtn: $("retryLoadBtn"), loadingScreen: $("loadingScreen"),
       loadState: $("loadState"), globalStateText: $("globalStateText"), dirtyText: $("dirtyText"), loadedAtText: $("loadedAtText"), configPill: $("configPill"), globalTileText: $("globalTileText"), globalPill: $("globalPill"), keyTileText: $("keyTileText"), keyPill: $("keyPill"),
       saveBtn: $("saveBtn"), mobileSaveBtn: $("mobileSaveBtn"), reloadConfigBtn: $("reloadConfigBtn"), openTokenBtn: $("openTokenBtn"),
-      maintChip: $("maintChip"), message: $("maintenanceMessage"), messageCount: $("messageCount"), activateMaintenanceBtn: $("activateMaintenanceBtn"), disableMaintenanceBtn: $("disableMaintenanceBtn"), previewMaintenanceBtn: $("previewMaintenanceBtn"), openScheduleBtn: $("openScheduleBtn"),
+      maintChip: $("maintChip"), message: $("maintenanceMessage"), messageCount: $("messageCount"), activateMaintenanceBtn: $("activateMaintenanceBtn"), disableMaintenanceBtn: $("disableMaintenanceBtn"), previewMaintenanceBtn: $("previewMaintenanceBtn"), openScheduleBtn: $("openScheduleBtn"), maintenanceCard: $("maintenanceCard"),
       stateModeLabel: $("stateModeLabel"), stateTitle: $("stateTitle"), stateMessage: $("stateMessage"), stateTimePill: $("stateTimePill"),
       noticeSeverity: $("noticeSeverity"), noticeTitle: $("noticeTitle"), noticeMessage: $("noticeMessage"), noticeTime: $("noticeTime"), previewBirthdayBtn: $("previewBirthdayBtn"), previewMundialBtn: $("previewMundialBtn"),
       birthdayModeChip: $("birthdayModeChip"), plantelCountBox: $("plantelCountBox"), plantelSourceText: $("plantelSourceText"), plantelSelectionText: $("plantelSelectionText"), plantelesGrid: $("plantelesGrid"), openPlantelesBtn: $("openPlantelesBtn"),
@@ -726,7 +761,8 @@
       rawDialog: $("rawDialog"), rawTitle: $("rawTitle"), rawOutput: $("rawOutput"), copyRawBtn: $("copyRawBtn"),
       openIsvRulesBtn: $("openIsvRulesBtn"), isvRulesDialog: $("isvRulesDialog"), isvIncludeList: $("isvIncludeList"), isvExcludeList: $("isvExcludeList"), newIsvIncludeInput: $("newIsvIncludeInput"), newIsvExcludeInput: $("newIsvExcludeInput"), addIsvIncludeBtn: $("addIsvIncludeBtn"), addIsvExcludeBtn: $("addIsvExcludeBtn"),
       plantelesDialog: $("plantelesDialog"), plantelesSearch: $("plantelesSearch"), plantelesList: $("plantelesList"),
-      jsonDialog: $("jsonDialog"), openJsonBtn: $("openJsonBtn"), jsonEditor: $("jsonEditor"), applyJsonBtn: $("applyJsonBtn"), formatJsonBtn: $("formatJsonBtn"), formatJsonBtn2: $("formatJsonBtn2")
+      jsonDialog: $("jsonDialog"), openJsonBtn: $("openJsonBtn"), jsonEditor: $("jsonEditor"), applyJsonBtn: $("applyJsonBtn"), formatJsonBtn: $("formatJsonBtn"), formatJsonBtn2: $("formatJsonBtn2"),
+      toast: $("toast"), toastText: $("toastText")
     };
 
     boot();
@@ -734,7 +770,8 @@
     async function boot() {
       bindControls();
       hydrateToken();
-      await loadCurrentConfig({ initial: true });
+      const loaded = await loadCurrentConfig({ initial: true });
+      if (!loaded) return;
       await startEEI(state, { sandbox: true });
       document.body.dataset.ready = "true";
       render();
@@ -742,7 +779,10 @@
 
     function bindControls() {
       refs.retryLoadBtn.addEventListener("click", () => loadCurrentConfig({ initial: true }));
-      refs.reloadConfigBtn.addEventListener("click", () => loadCurrentConfig());
+      refs.reloadConfigBtn.addEventListener("click", () => {
+        if (dirty && !confirm("Hay cambios sin guardar. Cargar la configuración guardada los descartará.")) return;
+        loadCurrentConfig();
+      });
       refs.saveBtn.addEventListener("click", saveConfig);
       refs.mobileSaveBtn.addEventListener("click", saveConfig);
       refs.openTokenBtn.addEventListener("click", () => refs.tokenDialog.showModal());
@@ -751,13 +791,30 @@
       document.querySelectorAll("[data-close-dialog]").forEach((button) => button.addEventListener("click", () => button.closest("dialog")?.close()));
 
       document.querySelectorAll("[data-bind]").forEach((control) => {
-        control.addEventListener("input", () => { writeControl(control); markDirty(); render(); updatePreview(); });
+        const handler = () => {
+          if (!assertLoaded()) return;
+          writeControl(control);
+          markDirty();
+          render();
+          updatePreview();
+        };
+        control.addEventListener("input", handler);
+        control.addEventListener("change", handler);
       });
-      document.querySelectorAll("[data-preset]").forEach((button) => button.addEventListener("click", () => applyPreset(button.dataset.preset, true)));
-      refs.message.addEventListener("input", () => { ensureMaintenanceDefaults(); state.maintenance.message = refs.message.value; markDirty(); render(); updatePreview(); });
-      refs.activateMaintenanceBtn.addEventListener("click", () => { ensureMaintenanceDefaults(); state.maintenance.enabled = true; markDirty(); render(); updatePreview({ replace: true }); autosaveOrAskKey(); });
-      refs.disableMaintenanceBtn.addEventListener("click", () => { ensureMaintenanceDefaults(); state.maintenance.enabled = false; markDirty(); render(); updatePreview({ replace: true }); autosaveOrAskKey(); });
-      refs.previewMaintenanceBtn.addEventListener("click", () => updatePreview({ replace: true }));
+
+      document.querySelectorAll("[data-preset]").forEach((button) => button.addEventListener("click", () => prepareMaintenancePreset(button.dataset.preset)));
+      refs.message.addEventListener("input", () => {
+        if (!assertLoaded()) return;
+        const activeDraft = maintenanceDraft || draftFromState();
+        activeDraft.message = refs.message.value;
+        maintenanceDraft = activeDraft;
+        markDirty();
+        render();
+        updatePreview();
+      });
+      refs.activateMaintenanceBtn.addEventListener("click", activateMaintenanceAndSave);
+      refs.disableMaintenanceBtn.addEventListener("click", disableMaintenanceAndSave);
+      refs.previewMaintenanceBtn.addEventListener("click", refreshPreviewFeedback);
       refs.openScheduleBtn.addEventListener("click", openSchedule);
       refs.useScheduleBtn.addEventListener("click", useSchedule);
       refs.scheduleDate.addEventListener("input", updateSchedulePreview);
@@ -765,8 +822,8 @@
       document.querySelectorAll("[data-day]").forEach((button) => button.addEventListener("click", () => setScheduleDay(button.dataset.day)));
       document.querySelectorAll("[data-time]").forEach((button) => button.addEventListener("click", () => setScheduleTime(button.dataset.time)));
 
-      refs.previewBirthdayBtn.addEventListener("click", previewBirthday);
-      refs.previewMundialBtn.addEventListener("click", previewMundial);
+      refs.previewBirthdayBtn.addEventListener("click", async () => { await previewBirthday(); showToast("Preview de cumpleaños ejecutado", "ok"); });
+      refs.previewMundialBtn.addEventListener("click", async () => { await previewMundial(); showToast("Preview Mundial ejecutado", "ok"); });
       refs.birthdayStatus.addEventListener("click", () => debugApi("birthday"));
       refs.plantelesStatus.addEventListener("click", () => debugApi("planteles"));
       refs.mundialStatus.addEventListener("click", () => debugApi("mundial"));
@@ -774,7 +831,7 @@
       refs.debugPlantelesBtn.addEventListener("click", () => debugApi("planteles"));
       refs.debugMundialBtn.addEventListener("click", () => debugApi("mundial"));
       document.querySelectorAll("[data-raw]").forEach((button) => button.addEventListener("click", () => showRaw(button.dataset.raw)));
-      refs.copyRawBtn.addEventListener("click", () => navigator.clipboard?.writeText(refs.rawOutput.textContent || ""));
+      refs.copyRawBtn.addEventListener("click", () => { navigator.clipboard?.writeText(refs.rawOutput.textContent || ""); showToast("JSON copiado", "ok"); });
 
       refs.openHostsBtn.addEventListener("click", () => { renderHosts(); refs.hostsDialog.showModal(); });
       refs.addHostBtn.addEventListener("click", addHost);
@@ -786,7 +843,11 @@
       refs.newIsvIncludeInput.addEventListener("keydown", (event) => { if (event.key === "Enter") addIsvRule("include"); });
       refs.newIsvExcludeInput.addEventListener("keydown", (event) => { if (event.key === "Enter") addIsvRule("exclude"); });
 
-      refs.openPlantelesBtn.addEventListener("click", async () => { if (!plantelesCache.length) await debugApi("planteles", { silentRaw: true }); renderPlantelesModal(); refs.plantelesDialog.showModal(); });
+      refs.openPlantelesBtn.addEventListener("click", async () => {
+        if (!plantelesCache.length) await debugApi("planteles", { silentRaw: true });
+        renderPlantelesModal();
+        refs.plantelesDialog.showModal();
+      });
       refs.plantelesSearch.addEventListener("input", renderPlantelesModal);
 
       refs.openJsonBtn.addEventListener("click", () => { refs.jsonEditor.value = JSON.stringify(state, null, 2); refs.jsonDialog.showModal(); });
@@ -797,92 +858,134 @@
 
     async function loadCurrentConfig({ initial = false } = {}) {
       if (initial) {
+        document.body.dataset.ready = "false";
         refs.loadingTitle.textContent = "Cargando configuración";
         refs.loadingText.textContent = "Leyendo la configuración guardada.";
         refs.retryLoadBtn.hidden = true;
       }
-      setDirty("Cargando", "warn");
+      setUiStatus("Cargando", "warn");
       try {
         const response = await fetch(`/__eei/config?adminLoad=${Date.now()}`, {
           cache: "no-store",
           credentials: "same-origin",
           headers: { "Cache-Control": "no-cache", "Pragma": "no-cache", "Accept": "application/json" }
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
+        const text = await response.text();
+        if (!response.ok) throw new Error(diagnoseHttpFailure(response, text).message);
+        const payload = JSON.parse(text || "{}");
         replaceState(payload);
         loadedOnce = true;
         configLoadedAt = new Date();
+        configSource = response.headers.get("X-EEI-Config-Source") || "kv";
         dirty = false;
+        maintenanceDraft = null;
         document.body.dataset.ready = "true";
         render();
         await updatePreview({ replace: true });
-        setDirty("Sin cambios", "ok");
+        setUiStatus("Sin cambios", "ok");
+        showToast(initial ? "Configuración cargada" : "Configuración recargada", "ok");
+        return true;
       } catch (error) {
         loadedOnce = false;
         if (initial) {
+          document.body.dataset.ready = "false";
           refs.loadingTitle.textContent = "No se pudo cargar";
           refs.loadingText.textContent = error.message || "Error de configuración.";
           refs.retryLoadBtn.hidden = false;
         } else {
-          setDirty("No cargó", "bad");
+          setUiStatus("No cargó", "bad");
+          showToast(error.message || "No se pudo cargar", "bad");
         }
         console.error("EEI config load failed", error);
-      }
-    }
-
-    async function saveConfig() {
-      readControls();
-      ensureDefaults();
-      const token = refs.adminToken.value.trim();
-      if (!token) { refs.tokenDialog.showModal(); setDirty("Falta key", "warn"); return false; }
-      setDirty("Guardando", "warn");
-      refs.saveBtn.disabled = true;
-      refs.mobileSaveBtn.disabled = true;
-      try {
-        state.version = 20;
-        const response = await fetch("/__eei/config", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(state) });
-        if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.error || `HTTP ${response.status}`); }
-        replaceState(await response.json());
-        dirty = false;
-        loadedOnce = true;
-        lastSavedAt = new Date();
-        await updatePreview({ replace: true });
-        render();
-        setDirty("Guardado", "ok");
-        return true;
-      } catch (error) {
-        refs.saveBtn.disabled = false;
-        refs.mobileSaveBtn.disabled = false;
-        setDirty("Falló", "bad");
-        console.error("EEI config save failed", error);
         return false;
       }
     }
 
-    async function autosaveOrAskKey() {
-      if (!refs.adminToken.value.trim()) { refs.tokenDialog.showModal(); return false; }
-      return saveConfig();
+    async function saveConfig() {
+      if (!assertLoaded()) return false;
+      readControls();
+      if (maintenanceDraft) Object.assign(state.maintenance, maintenanceDraft);
+      ensureDefaults();
+      const token = refs.adminToken.value.trim();
+      if (!token) { refs.tokenDialog.showModal(); setUiStatus("Falta key", "warn"); return false; }
+      setUiStatus("Guardando", "warn");
+      setSaving(true);
+      try {
+        state.version = 21;
+        const response = await fetch("/__eei/config", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(state)
+        });
+        const text = await response.text();
+        if (!response.ok) {
+          let payload = {};
+          try { payload = JSON.parse(text || "{}"); } catch {}
+          throw new Error(payload.error || diagnoseHttpFailure(response, text).message || `HTTP ${response.status}`);
+        }
+        replaceState(JSON.parse(text || "{}"));
+        dirty = false;
+        loadedOnce = true;
+        maintenanceDraft = null;
+        lastSavedAt = new Date();
+        await updatePreview({ replace: true });
+        render();
+        setUiStatus("Guardado", "ok");
+        showToast("Cambios guardados", "ok");
+        return true;
+      } catch (error) {
+        setUiStatus("Falló", "bad");
+        showToast(error.message || "No se pudo guardar", "bad");
+        console.error("EEI config save failed", error);
+        return false;
+      } finally {
+        setSaving(false);
+        updateSaveButtons();
+      }
     }
 
-    function hydrateToken() {
-      const remembered = localStorage.getItem(REMEMBER_STORAGE_KEY) === "1";
-      const saved = localStorage.getItem(TOKEN_STORAGE_KEY) || "";
-      refs.rememberToken.checked = remembered || Boolean(saved);
-      if (saved) refs.adminToken.value = saved;
-      renderTokenState();
+    function setSaving(value) {
+      refs.saveBtn.disabled = value;
+      refs.mobileSaveBtn.disabled = value;
+      refs.saveBtn.textContent = value ? "Guardando" : "Guardar";
+      refs.mobileSaveBtn.textContent = value ? "Guardando" : "Guardar";
     }
 
-    function saveTokenLocal() {
+    async function saveTokenLocal() {
       const token = refs.adminToken.value.trim();
       if (!token) return;
-      localStorage.setItem(TOKEN_STORAGE_KEY, token);
-      localStorage.setItem(REMEMBER_STORAGE_KEY, "1");
-      refs.rememberToken.checked = true;
-      refs.tokenDialog.close();
-      renderTokenState();
-      setDirty("Key guardada", "ok");
-      render();
+      refs.saveTokenBtn.disabled = true;
+      refs.saveTokenBtn.textContent = "Validando";
+      try {
+        const valid = await validateToken(token);
+        if (!valid.ok) throw new Error(valid.message);
+        localStorage.setItem(TOKEN_STORAGE_KEY, token);
+        localStorage.setItem(REMEMBER_STORAGE_KEY, "1");
+        refs.rememberToken.checked = true;
+        refs.tokenDialog.close();
+        renderTokenState(true);
+        showToast("Key validada", "ok");
+        render();
+      } catch (error) {
+        showToast(error.message || "Key inválida", "bad");
+      } finally {
+        refs.saveTokenBtn.disabled = false;
+        refs.saveTokenBtn.textContent = "Guardar key";
+      }
+    }
+
+    async function validateToken(token) {
+      try {
+        const response = await fetch(`/__eei/admin-check?t=${Date.now()}`, {
+          cache: "no-store",
+          headers: { Accept: "application/json", Authorization: `Bearer ${token}` }
+        });
+        const text = await response.text();
+        if (!response.ok) return { ok: false, message: diagnoseHttpFailure(response, text).message };
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, message: error.message || "No se pudo validar la key" };
+      }
     }
 
     function forgetTokenLocal() {
@@ -890,35 +993,82 @@
       localStorage.removeItem(REMEMBER_STORAGE_KEY);
       refs.adminToken.value = "";
       refs.rememberToken.checked = false;
-      renderTokenState();
+      renderTokenState(false);
       render();
     }
 
-    function renderTokenState() {
+    function hydrateToken() {
+      const remembered = localStorage.getItem(REMEMBER_STORAGE_KEY) === "1";
+      const saved = localStorage.getItem(TOKEN_STORAGE_KEY) || "";
+      refs.rememberToken.checked = remembered || Boolean(saved);
+      if (saved) refs.adminToken.value = saved;
+      renderTokenState(Boolean(saved));
+    }
+
+    function renderTokenState(validated = false) {
       const hasToken = Boolean(refs.adminToken.value.trim() || localStorage.getItem(TOKEN_STORAGE_KEY));
       refs.openTokenBtn.classList.toggle("ghost", hasToken);
       refs.openTokenBtn.classList.toggle("secondary", !hasToken);
-      refs.keyTileText.textContent = hasToken ? "Lista" : "Falta";
-      refs.keyPill.textContent = hasToken ? "OK" : "Pendiente";
-      refs.keyPill.className = `pill ${hasToken ? "ok" : "warn"}`;
+      refs.keyTileText.textContent = hasToken ? (validated ? "Validada" : "Lista") : "Falta";
+      refs.keyPill.textContent = hasToken ? (validated ? "OK" : "Sin validar") : "Pendiente";
+      refs.keyPill.className = `pill ${hasToken ? (validated ? "ok" : "warn") : "warn"}`;
     }
 
-    function applyPreset(value, shouldEnable = false) {
-      ensureMaintenanceDefaults();
+    function prepareMaintenancePreset(value) {
+      if (!assertLoaded()) return;
       const minutes = value === "now" ? 0 : Number(value);
       const target = new Date(Date.now() + minutes * 60000);
-      state.maintenance.enabled = shouldEnable || state.maintenance.enabled;
-      state.maintenance.targetAt = toIsoWithOffset(target);
-      state.maintenance.severity = minutes <= 5 ? "urgent" : minutes <= 15 ? "planned" : "planned";
-      state.maintenance.title = minutes <= 5 ? "Mantenimiento urgente" : "Mantenimiento programado";
-      state.maintenance.message = refs.message.value.trim() || DEFAULT_MESSAGE;
+      maintenanceDraft = {
+        enabled: false,
+        targetAt: toIsoWithOffset(target),
+        severity: minutes <= 5 ? "urgent" : "planned",
+        title: minutes <= 5 ? "Mantenimiento urgente" : "Mantenimiento programado",
+        message: refs.message.value.trim() || state.maintenance?.message || DEFAULT_MESSAGE
+      };
       markDirty();
       render();
       updatePreview({ replace: true });
+      showToast("Vista preparada. Pulsa Activar y guardar.", "ok");
+    }
+
+    function draftFromState() {
+      ensureMaintenanceDefaults();
+      return {
+        enabled: Boolean(state.maintenance.enabled),
+        targetAt: state.maintenance.targetAt,
+        severity: state.maintenance.severity,
+        title: state.maintenance.title,
+        message: state.maintenance.message || DEFAULT_MESSAGE
+      };
+    }
+
+    async function activateMaintenanceAndSave() {
+      if (!assertLoaded()) return;
+      ensureMaintenanceDefaults();
+      const draft = maintenanceDraft || draftFromState();
+      Object.assign(state.maintenance, draft, { enabled: true });
+      state.maintenance.message = refs.message.value.trim() || DEFAULT_MESSAGE;
+      maintenanceDraft = null;
+      markDirty();
+      render();
+      await updatePreview({ replace: true });
+      await saveConfig();
+    }
+
+    async function disableMaintenanceAndSave() {
+      if (!assertLoaded()) return;
+      ensureMaintenanceDefaults();
+      state.maintenance.enabled = false;
+      maintenanceDraft = null;
+      markDirty();
+      render();
+      await updatePreview({ replace: true });
+      await saveConfig();
     }
 
     function openSchedule() {
-      const current = new Date(Date.parse(state.maintenance?.targetAt || "") || Date.now() + 30 * 60000);
+      if (!assertLoaded()) return;
+      const current = new Date(Date.parse(maintenanceDraft?.targetAt || state.maintenance?.targetAt || "") || Date.now() + 30 * 60000);
       refs.scheduleDate.value = dateInput(current);
       refs.scheduleTime.value = timeInput(current);
       updateSchedulePreview();
@@ -934,20 +1084,20 @@
 
     function setScheduleTime(value) {
       const now = new Date();
-      if (value === "now") refs.scheduleTime.value = timeInput(now);
-      else refs.scheduleTime.value = value;
+      refs.scheduleTime.value = value === "now" ? timeInput(now) : value;
       updateSchedulePreview();
     }
 
     function useSchedule() {
       const date = new Date(`${refs.scheduleDate.value}T${refs.scheduleTime.value || "00:00"}`);
       if (Number.isNaN(date.getTime())) return;
-      ensureMaintenanceDefaults();
-      state.maintenance.enabled = true;
-      state.maintenance.targetAt = toIsoWithOffset(date);
-      state.maintenance.severity = date.getTime() - Date.now() <= 15 * 60000 ? "urgent" : "planned";
-      state.maintenance.title = state.maintenance.severity === "urgent" ? "Mantenimiento urgente" : "Mantenimiento programado";
-      state.maintenance.message = refs.message.value.trim() || DEFAULT_MESSAGE;
+      maintenanceDraft = {
+        enabled: false,
+        targetAt: toIsoWithOffset(date),
+        severity: date.getTime() - Date.now() <= 15 * 60000 ? "urgent" : "planned",
+        title: date.getTime() - Date.now() <= 15 * 60000 ? "Mantenimiento urgente" : "Mantenimiento programado",
+        message: refs.message.value.trim() || DEFAULT_MESSAGE
+      };
       refs.scheduleDialog.close();
       markDirty();
       render();
@@ -965,8 +1115,21 @@
       refs.schedulePreviewSub.textContent = relativeTime(date);
     }
 
-    async function updatePreview(options = {}) {
-      return updateEEI(state, { sandbox: true, ...options });
+    async function refreshPreviewFeedback() {
+      await updatePreview({ replace: true });
+      const card = document.querySelector(".preview-card");
+      card?.classList.remove("flash");
+      void card?.offsetWidth;
+      card?.classList.add("flash");
+      card?.scrollIntoView({ behavior: "smooth", block: "center" });
+      showToast("Vista actualizada", "ok");
+    }
+
+    async function updatePreview(options = {}) { return updateEEI(previewConfig(), { sandbox: true, ...options }); }
+
+    function previewConfig() {
+      if (!maintenanceDraft) return state;
+      return deepMerge(state, { maintenance: maintenanceDraft });
     }
 
     async function previewBirthday() {
@@ -980,23 +1143,25 @@
     }
 
     async function debugApi(kind, { silentRaw = false } = {}) {
+      if (!assertLoaded()) return null;
       const endpoint = endpointFor(kind);
       setHealth(kind, "Probando", "warn");
       try {
-        const response = await fetch(endpoint, { cache: "no-store", credentials: "same-origin", headers: { Accept: "application/json" } });
+        const response = await fetch(`${endpoint}${endpoint.includes("?") ? "&" : "?"}adminDebug=${Date.now()}`, { cache: "no-store", credentials: "same-origin", headers: { Accept: "application/json" } });
         const text = await response.text();
         let payload;
         try { payload = JSON.parse(text); } catch { payload = text; }
-        const summary = { endpoint, ok: response.ok, status: response.status, statusText: response.statusText, receivedAt: new Date().toISOString(), payload };
+        const diagnosis = diagnoseHttpFailure(response, text, payload);
+        const summary = { endpoint, ok: response.ok, status: response.status, label: response.ok ? "OK" : diagnosis.label, message: response.ok ? "Respuesta correcta" : diagnosis.message, receivedAt: new Date().toISOString(), payload };
         rawPayload[kind] = summary;
         health[kind] = summary;
-        if (kind === "planteles") syncPlantelesFromPayload(payload);
-        setHealth(kind, response.ok ? "OK" : String(response.status), response.ok ? "ok" : "bad");
+        if (kind === "planteles" && response.ok) syncPlantelesFromPayload(payload);
+        setHealth(kind, response.ok ? "OK" : diagnosis.label, response.ok ? "ok" : "bad");
         render();
         if (!silentRaw) showRaw(kind);
         return summary;
       } catch (error) {
-        const summary = { endpoint, ok: false, error: error.message, receivedAt: new Date().toISOString() };
+        const summary = { endpoint, ok: false, label: "Error", message: error.message, receivedAt: new Date().toISOString() };
         rawPayload[kind] = summary;
         health[kind] = summary;
         setHealth(kind, "Error", "bad");
@@ -1007,10 +1172,34 @@
     }
 
     function endpointFor(kind) {
-      if (kind === "birthday") return "/__eei/signia-birthdays?debug=1";
-      if (kind === "planteles") return "/__eei/signia-planteles?debug=1";
+      if (kind === "birthday") return normalizeInternalEndpoint(state.birthday?.apiUrl, "/__eei/signia-birthdays?debug=1", true);
+      if (kind === "planteles") return normalizeInternalEndpoint(state.birthday?.plantelesApiUrl, "/__eei/signia-planteles?debug=1", true);
+      const base = normalizeInternalEndpoint(state.festivities?.mundial_2026?.sportsApiUrl, "/__eei/worldcup-matches", false);
       const today = todayInTimeZone("America/Mexico_City");
-      return `/__eei/worldcup-matches?debug=1&date=${encodeURIComponent(today)}`;
+      return `${base}${base.includes("?") ? "&" : "?"}debug=1&date=${encodeURIComponent(today)}`;
+    }
+
+    function normalizeInternalEndpoint(value, fallback, addDebug) {
+      let endpoint = String(value || fallback).trim() || fallback;
+      endpoint = endpoint.replace(/^\/_eei\//, "/__eei/");
+      if (!endpoint.startsWith("http") && !endpoint.startsWith("/")) endpoint = `/${endpoint}`;
+      if (addDebug && !endpoint.includes("debug=")) endpoint += `${endpoint.includes("?") ? "&" : "?"}debug=1`;
+      return endpoint;
+    }
+
+    function diagnoseHttpFailure(response, text = "", payload = null) {
+      const body = String(text || "");
+      const lower = body.toLowerCase();
+      const payloadError = payload && typeof payload === "object" ? (payload.error || payload.detail || payload.message) : "";
+      const providerStatus = payload && typeof payload === "object" ? payload.providerStatus : null;
+      if (response.status === 1027 || lower.includes("error 1027") || lower.includes("temporarily rate limited")) return { label: "CF 1027", message: "Cloudflare bloqueó la petición por límite del Worker." };
+      if (response.status === 401 || response.status === 403) return { label: String(response.status), message: "La key no es válida o falta el secreto del Worker." };
+      if (payloadError && String(payloadError).includes("FOOTBALL_DATA_API_TOKEN")) return { label: "Token", message: "Falta FOOTBALL_DATA_API_TOKEN en el Worker." };
+      if (providerStatus) return { label: `Signia ${providerStatus}`, message: `El proveedor respondió ${providerStatus}.` };
+      if (response.status === 429) return { label: "429", message: "El proveedor o Cloudflare limitó la petición." };
+      if (response.status >= 500) return { label: String(response.status), message: payloadError || `Error HTTP ${response.status}.` };
+      if (!response.ok) return { label: String(response.status), message: payloadError || `HTTP ${response.status}.` };
+      return { label: "OK", message: "Respuesta correcta." };
     }
 
     function setHealth(kind, label, tone = "") {
@@ -1042,11 +1231,10 @@
 
     function renderPlanteles() {
       refs.plantelCountBox.textContent = plantelesCache.length ? String(plantelesCache.length) : "—";
+      refs.plantelSourceText.textContent = plantelesCache.length ? "Catálogo de Signia" : "Sin cargar";
       refs.plantelesGrid.innerHTML = plantelesCache.length
-        ? plantelesCache.slice(0, 18).map((p) => `<span class="plantel-pill">${escapeHtml(p.label || p.name)}</span>`).join("")
-        : `<span class="plantel-pill">Pulsa Ver para cargar</span>`;
-      refs.plantelSourceText.textContent = plantelesCache.length ? "Signia API" : "Signia";
-      refs.plantelSelectionText.textContent = "Usuarios eligen sus notificaciones";
+        ? plantelesCache.slice(0, 16).map((p) => `<span class="plantel-pill">${escapeHtml(p.label || p.name)}</span>`).join("")
+        : `<span class="plantel-pill">Pulsa Probar planteles</span>`;
     }
 
     function renderPlantelesModal() {
@@ -1060,13 +1248,21 @@
     function render() {
       ensureDefaults();
       syncControls();
-      refs.message.value = state.maintenance.message || DEFAULT_MESSAGE;
+      const draft = maintenanceDraft || null;
+      const previewMaintenance = draft ? deepMerge(state.maintenance, draft) : state.maintenance;
+      refs.message.value = draft?.message ?? state.maintenance.message ?? DEFAULT_MESSAGE;
       refs.messageCount.textContent = `${refs.message.value.length}/160`;
       refs.jsonEditor.value = JSON.stringify(state, null, 2);
+      refs.birthdayEndpoint.textContent = normalizeInternalEndpoint(state.birthday?.apiUrl, "/__eei/signia-birthdays", false).replace(/\?.*$/, "");
+      refs.plantelesEndpoint.textContent = normalizeInternalEndpoint(state.birthday?.plantelesApiUrl, "/__eei/signia-planteles", false).replace(/\?.*$/, "");
+      refs.mundialEndpoint.textContent = normalizeInternalEndpoint(state.festivities?.mundial_2026?.sportsApiUrl, "/__eei/worldcup-matches", false).replace(/\?.*$/, "");
 
       const activeModules = [state.enabled, state.campaigns?.isv?.enabled, state.birthday?.enabled, state.festivities?.mundial_2026?.enabled, state.festivities?.christmas?.enabled, state.festivities?.new_year?.enabled].filter(Boolean).length;
       refs.moduleCount.textContent = `${activeModules} ON`;
-      refs.hostCount.textContent = String((state.injection?.excludeHostnamesExact || []).length);
+      const blocked = (state.injection?.excludeHostnamesExact || []).length;
+      const isvInc = (state.campaigns?.isv?.includeHostnames || []).length;
+      const isvExc = (state.campaigns?.isv?.excludeHostnames || []).length;
+      refs.hostCount.textContent = `${blocked} bloqueados · ${isvInc + isvExc} reglas ISV`;
       refs.birthdayModeChip.textContent = state.birthday?.enabled ? String(state.birthday?.mode || "api").toUpperCase() : "OFF";
       refs.birthdayModeChip.className = `pill ${state.birthday?.enabled ? "ok" : ""}`;
 
@@ -1076,29 +1272,50 @@
       refs.globalPill.className = `pill ${state.enabled ? "ok" : ""}`;
       refs.dirtyText.textContent = dirty ? "Sin guardar" : "Sin cambios";
       refs.loadState.textContent = lastSavedAt ? `Guardado ${timeShort(lastSavedAt)}` : configLoadedAt ? `Cargado ${timeShort(configLoadedAt)}` : loadedOnce ? "Cargado" : "Cargando";
-      refs.loadedAtText.textContent = lastSavedAt ? `Guardado ${timeShort(lastSavedAt)}` : configLoadedAt ? `Cargado ${timeShort(configLoadedAt)}` : "—";
-      refs.configPill.textContent = dirty ? "Pendiente" : "OK";
-      refs.configPill.className = `pill ${dirty ? "warn" : "ok"}`;
-      refs.saveBtn.disabled = !loadedOnce || !dirty;
-      refs.mobileSaveBtn.disabled = !loadedOnce || !dirty;
+      refs.loadedAtText.textContent = configSource === "default" ? "Default" : lastSavedAt ? `Guardado ${timeShort(lastSavedAt)}` : configLoadedAt ? `Cargado ${timeShort(configLoadedAt)}` : "—";
+      refs.configPill.textContent = dirty ? "Pendiente" : configSource === "default" ? "Default" : "OK";
+      refs.configPill.className = `pill ${dirty ? "warn" : configSource === "default" ? "warn" : "ok"}`;
+      updateSaveButtons();
 
       const enabled = Boolean(state.maintenance?.enabled);
-      const mText = enabled ? maintenanceCountdownText() : "OFF";
-      refs.maintChip.textContent = mText;
-      refs.maintChip.className = `pill ${enabled ? "ok" : ""}`;
-      refs.stateModeLabel.textContent = enabled ? String(state.maintenance.severity || "planned") : "Sin mantenimiento";
-      refs.stateTitle.textContent = enabled ? (state.maintenance.title || "Mantenimiento") : "Operación normal";
-      refs.stateMessage.textContent = enabled ? (state.maintenance.message || DEFAULT_MESSAGE) : "EEI está activo sin ventana de mantenimiento.";
-      refs.stateTimePill.textContent = enabled ? mText : "Listo";
-      refs.stateTimePill.className = `pill ${enabled ? "ok" : ""}`;
-      refs.noticeSeverity.textContent = enabled ? String(state.maintenance.severity || "planned") : "normal";
-      refs.noticeTitle.textContent = enabled ? (state.maintenance.title || "Mantenimiento") : "Sin mantenimiento";
-      refs.noticeMessage.textContent = enabled ? (state.maintenance.message || DEFAULT_MESSAGE) : "EEI listo.";
-      refs.noticeTime.textContent = enabled ? mText : "Listo";
-      markActivePreset();
+      const prepared = Boolean(draft);
+      const mText = enabled ? maintenanceCountdownText(state.maintenance) : prepared ? maintenanceCountdownText(previewMaintenance) : "OFF";
+      refs.maintChip.textContent = enabled ? mText : prepared ? "Preparado" : "OFF";
+      refs.maintChip.className = `pill ${enabled ? "ok" : prepared ? "warn" : ""}`;
+      refs.stateModeLabel.textContent = enabled ? String(state.maintenance.severity || "planned") : prepared ? "Preparado" : "Sin mantenimiento";
+      refs.stateTitle.textContent = enabled ? (state.maintenance.title || "Mantenimiento") : prepared ? (previewMaintenance.title || "Mantenimiento preparado") : "Operación normal";
+      refs.stateMessage.textContent = enabled || prepared ? (previewMaintenance.message || DEFAULT_MESSAGE) : "EEI está activo sin ventana de mantenimiento.";
+      refs.stateTimePill.textContent = enabled || prepared ? mText : "Listo";
+      refs.stateTimePill.className = `pill ${enabled ? "ok" : prepared ? "warn" : ""}`;
+      refs.noticeSeverity.textContent = enabled ? String(state.maintenance.severity || "planned") : prepared ? "preview" : "normal";
+      refs.noticeTitle.textContent = enabled ? (state.maintenance.title || "Mantenimiento") : prepared ? (previewMaintenance.title || "Mantenimiento preparado") : "Sin mantenimiento";
+      refs.noticeMessage.textContent = enabled || prepared ? (previewMaintenance.message || DEFAULT_MESSAGE) : "EEI listo.";
+      refs.noticeTime.textContent = enabled || prepared ? mText : "Listo";
+      refs.activateMaintenanceBtn.innerHTML = `<i class="fa-solid fa-play" aria-hidden="true"></i>${enabled ? "Guardar cambios" : "Activar y guardar"}`;
+      refs.disableMaintenanceBtn.innerHTML = `<i class="fa-solid fa-power-off" aria-hidden="true"></i>Apagar y guardar`;
+      markActivePreset(previewMaintenance, enabled || prepared);
       renderHealthSummary();
       renderPlanteles();
-      renderTokenState();
+      renderTokenState(Boolean(localStorage.getItem(TOKEN_STORAGE_KEY)));
+      updateRawButtons();
+    }
+
+    function updateSaveButtons() {
+      const reason = !loadedOnce ? "La configuración no ha cargado" : !dirty ? "No hay cambios" : "Guardar cambios";
+      refs.saveBtn.disabled = !loadedOnce || !dirty;
+      refs.mobileSaveBtn.disabled = !loadedOnce || !dirty;
+      refs.saveBtn.title = reason;
+      refs.mobileSaveBtn.title = reason;
+      if (!refs.saveBtn.disabled) refs.saveBtn.innerHTML = `<i class="fa-regular fa-floppy-disk" aria-hidden="true"></i>Guardar`;
+      if (!refs.mobileSaveBtn.disabled) refs.mobileSaveBtn.innerHTML = `<i class="fa-regular fa-floppy-disk" aria-hidden="true"></i>Guardar`;
+    }
+
+    function updateRawButtons() {
+      document.querySelectorAll("[data-raw]").forEach((button) => {
+        const kind = button.dataset.raw;
+        button.disabled = !rawPayload[kind];
+        button.textContent = rawPayload[kind] ? "JSON" : "Sin respuesta";
+      });
     }
 
     function renderHealthSummary() {
@@ -1108,23 +1325,24 @@
       refs.healthChip.className = `pill ${values.length && ok === values.length ? "ok" : values.length ? "warn" : ""}`;
     }
 
-    function markActivePreset() {
-      const target = Date.parse(state.maintenance?.targetAt || "");
+    function markActivePreset(maintenance, shouldMark) {
+      const target = Date.parse(maintenance?.targetAt || "");
       const minutes = Number.isFinite(target) ? Math.round((target - Date.now()) / 60000) : null;
       document.querySelectorAll("[data-preset]").forEach((button) => {
         const value = button.dataset.preset;
         const expected = value === "now" ? 0 : Number(value);
-        button.classList.toggle("active", state.maintenance?.enabled && minutes !== null && Math.abs(minutes - expected) <= 1);
+        button.classList.toggle("active", Boolean(shouldMark) && minutes !== null && Math.abs(minutes - expected) <= 1);
       });
     }
 
     function renderHosts() {
       const hosts = state.injection?.excludeHostnamesExact || [];
-      refs.hostsList.innerHTML = hosts.length ? hosts.map((host) => `<div class="host-chip"><span>${escapeHtml(host)}</span><button type="button" data-remove-host="${escapeAttribute(host)}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>`).join("") : `<div class="row"><div><strong>Sin hosts</strong><span>—</span></div></div>`;
+      refs.hostsList.innerHTML = hosts.length ? hosts.map((host) => `<div class="host-chip"><span>${escapeHtml(host)}</span><button type="button" data-remove-host="${escapeAttribute(host)}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>`).join("") : `<div class="row"><div><strong>Sin hosts bloqueados</strong><span>La inyección sigue las rutas activas.</span></div></div>`;
       refs.hostsList.querySelectorAll("[data-remove-host]").forEach((btn) => btn.addEventListener("click", () => removeHost(btn.dataset.removeHost)));
     }
 
     function addHost() {
+      if (!assertLoaded()) return;
       const host = normalizeHost(refs.newHostInput.value);
       if (!host) return;
       ensureInjectionConfig();
@@ -1136,6 +1354,7 @@
     }
 
     function removeHost(host) {
+      if (!assertLoaded()) return;
       ensureInjectionConfig();
       state.injection.excludeHostnamesExact = state.injection.excludeHostnamesExact.filter((item) => item !== host);
       markDirty();
@@ -1150,11 +1369,12 @@
     }
 
     function renderRuleList(container, values, kind) {
-      container.innerHTML = values.length ? values.map((host) => `<div class="host-chip"><span>${escapeHtml(host)}</span><button type="button" data-remove-isv-${kind}="${escapeAttribute(host)}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>`).join("") : `<div class="row"><div><strong>${kind === "include" ? "Todos los hosts" : "Sin exclusiones"}</strong><span>—</span></div></div>`;
-      container.querySelectorAll(`[data-remove-isv-${kind}]`).forEach((btn) => btn.addEventListener("click", () => removeIsvRule(kind, btn.dataset[`removeIsv${kind[0].toUpperCase()}${kind.slice(1)}`])));
+      container.innerHTML = values.length ? values.map((host) => `<div class="host-chip"><span>${escapeHtml(host)}</span><button type="button" data-host="${escapeAttribute(host)}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>`).join("") : `<div class="row"><div><strong>${kind === "include" ? "Todos los hosts" : "Sin exclusiones"}</strong><span>${kind === "include" ? "ISV se muestra en todos los hosts permitidos por ruta." : "Ningún host está oculto por regla ISV."}</span></div></div>`;
+      container.querySelectorAll("[data-host]").forEach((btn) => btn.addEventListener("click", () => removeIsvRule(kind, btn.dataset.host)));
     }
 
     function addIsvRule(kind) {
+      if (!assertLoaded()) return;
       ensureIsvConfig();
       const input = kind === "include" ? refs.newIsvIncludeInput : refs.newIsvExcludeInput;
       const host = normalizeHost(input.value);
@@ -1168,6 +1388,7 @@
     }
 
     function removeIsvRule(kind, host) {
+      if (!assertLoaded()) return;
       ensureIsvConfig();
       const key = kind === "include" ? "includeHostnames" : "excludeHostnames";
       state.campaigns.isv[key] = state.campaigns.isv[key].filter((item) => item !== host);
@@ -1176,8 +1397,8 @@
       render();
     }
 
-    function maintenanceCountdownText() {
-      const target = Date.parse(state.maintenance?.targetAt || "");
+    function maintenanceCountdownText(maintenance = state.maintenance) {
+      const target = Date.parse(maintenance?.targetAt || "");
       if (!Number.isFinite(target)) return "Sin fecha";
       const diff = target - Date.now();
       if (diff <= 0) return "Activo ahora";
@@ -1188,15 +1409,9 @@
       return rest ? `En ${hours} h ${rest} min` : `En ${hours} h`;
     }
 
-    function setDirty(label) {
-      if (refs.dirtyText) refs.dirtyText.textContent = label;
-    }
+    function setUiStatus(label) { if (refs.dirtyText) refs.dirtyText.textContent = label; }
 
-    function markDirty(value = true) {
-      if (value) dirty = true;
-      refs.saveBtn.disabled = !loadedOnce || !dirty;
-      refs.mobileSaveBtn.disabled = !loadedOnce || !dirty;
-    }
+    function markDirty(value = true) { if (value) dirty = true; updateSaveButtons(); }
 
     function syncControls() {
       document.querySelectorAll("[data-bind]").forEach((control) => {
@@ -1206,9 +1421,7 @@
       });
     }
 
-    function readControls() {
-      document.querySelectorAll("[data-bind]").forEach(writeControl);
-    }
+    function readControls() { document.querySelectorAll("[data-bind]").forEach(writeControl); }
 
     function writeControl(control) {
       let value = control.type === "checkbox" ? control.checked : control.value;
@@ -1217,16 +1430,18 @@
     }
 
     function applyJson() {
+      if (!assertLoaded()) return;
       try {
         const payload = JSON.parse(refs.jsonEditor.value);
         replaceState(payload);
+        maintenanceDraft = null;
         markDirty();
         render();
         updatePreview({ replace: true });
         refs.jsonDialog.close();
       } catch (error) {
         refs.jsonEditor.focus();
-        alert(`JSON inválido: ${error.message}`);
+        showToast(`JSON inválido: ${error.message}`, "bad");
       }
     }
 
@@ -1239,8 +1454,14 @@
       }
     }
 
+    function assertLoaded() {
+      if (loadedOnce) return true;
+      showToast("La configuración todavía no ha cargado.", "bad");
+      return false;
+    }
+
     function ensureDefaults() {
-      state.version = 20;
+      state.version = 21;
       state.injection = state.injection || {};
       if (!Array.isArray(state.injection.excludeHostnamesExact)) state.injection.excludeHostnamesExact = [];
       state.campaigns = state.campaigns || {};
@@ -1253,7 +1474,11 @@
       state.maintenance.severity = state.maintenance.severity || "planned";
       state.maintenance.targetAt = state.maintenance.targetAt || toIsoWithOffset(new Date(Date.now() + 15 * 60000));
       state.birthday = state.birthday || {};
-      state.birthday.plantelesApiUrl = state.birthday.plantelesApiUrl || "/__eei/signia-planteles";
+      state.birthday.apiUrl = normalizeInternalEndpoint(state.birthday.apiUrl, "/__eei/signia-birthdays", false);
+      state.birthday.plantelesApiUrl = normalizeInternalEndpoint(state.birthday.plantelesApiUrl, "/__eei/signia-planteles", false);
+      state.festivities = state.festivities || {};
+      state.festivities.mundial_2026 = state.festivities.mundial_2026 || {};
+      state.festivities.mundial_2026.sportsApiUrl = normalizeInternalEndpoint(state.festivities.mundial_2026.sportsApiUrl, "/__eei/worldcup-matches", false);
     }
 
     function ensureMaintenanceDefaults() { ensureDefaults(); }
@@ -1279,6 +1504,13 @@
         else output[key] = value;
       }
       return output;
+    }
+
+    function showToast(message, tone = "ok") {
+      clearTimeout(toastTimer);
+      refs.toast.className = `toast show ${tone}`;
+      refs.toastText.textContent = message;
+      toastTimer = setTimeout(() => refs.toast.classList.remove("show"), 3600);
     }
 
     function normalizeHost(value) { return String(value || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/\*+/g, ""); }
