@@ -527,7 +527,7 @@
               <p class="subtle">The overlay is injected above this simulated product surface with a pointer-safe WebGL canvas.</p>
               <div class="ops-metric">
                 <div class="metric"><strong id="activeCount">0</strong><span>active layers</span></div>
-                <div class="metric"><strong id="birthdayCount">1</strong><span>birthdays today</span></div>
+                <div class="metric"><strong id="birthdayCount">0</strong><span>birthdays today</span></div>
                 <div class="metric"><strong id="countdownMetric">--</strong><span>maintenance ETA</span></div>
               </div>
             </div>
@@ -599,7 +599,7 @@
   </div>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v2";
 
     const state = clone(DEFAULT_CONFIG);
     const refs = {

@@ -1,11 +1,12 @@
 const CONFIG_KEY = "config";
+const EEI_ASSET_VERSION = "2026-07-01-v2";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const FOOTBALL_DATA_DEFAULT_BASE_URL = "https://api.football-data.org/v4";
 const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 1,
+  version: 2,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -341,9 +342,10 @@ async function maybeInject(request, env, response) {
     return response;
   }
 
+  const engineUrl = `/__eei/engine.js?v=${encodeURIComponent(EEI_ASSET_VERSION)}&autostart=1&config=%2F__eei%2Fconfig`;
   const injection = [
     '<script>window.__EEI_BOOT__={configEndpoint:"/__eei/config"};</script>',
-    '<script type="module" src="/__eei/engine.js?autostart=1&config=%2F__eei%2Fconfig"></script>'
+    `<script type="module" src="${engineUrl}"></script>`
   ].join("");
 
   const rewritten = new HTMLRewriter()
@@ -402,7 +404,11 @@ async function serveAsset(env, request, pathname, contentType) {
 
   const headers = new Headers(response.headers);
   headers.set("Content-Type", contentType);
-  headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  if (pathname === "/eei-engine.js") {
+    headers.set("Cache-Control", "no-cache");
+  } else {
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  }
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
