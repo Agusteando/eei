@@ -570,9 +570,9 @@
                 <input type="text" data-bind="festivities.mundial_2026.priorityTeam">
               </label>
               <label class="field">Admin token
-                <input type="password" id="adminToken" autocomplete="off" placeholder="Bearer token">
+                <input type="password" id="adminToken" autocomplete="off" placeholder="Paste EEI_ADMIN_TOKEN value">
               </label>
-              <label class="field">Sports API URL
+              <label class="field">Mundial API URL
                 <input type="text" data-bind="festivities.mundial_2026.sportsApiUrl" spellcheck="false">
               </label>
             </div>
@@ -621,7 +621,7 @@
     async function start() {
       bindControls();
       render();
-      await startEEI(state, { sandbox: true, forceBirthday: true });
+      await startEEI(state, { sandbox: true });
       setStatus("Sandbox active", "ok");
     }
 
@@ -641,12 +641,12 @@
       document.getElementById("applyFieldsBtn").addEventListener("click", () => {
         readControls();
         render();
-        updateEEI(state, { sandbox: true, forceBirthday: Boolean(state.birthday.enabled) });
+        updateEEI(state, { sandbox: true });
       });
       document.getElementById("resetBtn").addEventListener("click", () => {
         replaceState(DEFAULT_CONFIG);
         render();
-        updateEEI(state, { sandbox: true, forceBirthday: true });
+        updateEEI(state, { sandbox: true });
         setStatus("Defaults restored", "ok");
       });
       document.getElementById("applyJsonBtn").addEventListener("click", applyJson);
@@ -656,7 +656,7 @@
       document.getElementById("birthdayPreviewBtn").addEventListener("click", () => {
         state.birthday.enabled = true;
         render();
-        updateEEI(state, { sandbox: true, forceBirthday: true });
+        updateEEI(state, { sandbox: true });
       });
       document.getElementById("celebrationPreviewBtn").addEventListener("click", () => {
         state.festivities.new_year.enabled = true;
@@ -684,7 +684,7 @@
         const payload = await response.json();
         replaceState(payload);
         render();
-        await updateEEI(state, { sandbox: true, forceBirthday: Boolean(state.birthday.enabled) });
+        await updateEEI(state, { sandbox: true });
         setStatus("KV loaded", "ok");
       } catch (error) {
         setStatus(`Load failed: ${error.message}`, "warn");
@@ -722,7 +722,7 @@
         const payload = JSON.parse(refs.jsonEditor.value);
         replaceState(payload);
         render();
-        updateEEI(state, { sandbox: true, forceBirthday: Boolean(state.birthday.enabled) });
+        updateEEI(state, { sandbox: true });
         setStatus("JSON applied", "ok");
       } catch (error) {
         setStatus(`Invalid JSON: ${error.message}`, "warn");

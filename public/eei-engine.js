@@ -26,15 +26,7 @@ export const DEFAULT_CONFIG = {
     timezone: DEFAULT_TIMEZONE,
     showOncePerDay: true,
     toastDurationMs: 9500,
-    mockBirthdays: [
-      {
-        id: 123,
-        name: "Nombre Apellido",
-        puesto: "Docente",
-        plantel: "Plantel Centro",
-        cumpleanos: "06-30"
-      }
-    ]
+    mockBirthdays: []
   },
   festivities: {
     christmas: {
@@ -49,7 +41,7 @@ export const DEFAULT_CONFIG = {
     mundial_2026: {
       enabled: false,
       intensity: 0.72,
-      sportsApiUrl: "/__eei/mock-worldcup-matches",
+      sportsApiUrl: "/__eei/worldcup-matches",
       priorityTeam: "Mexico"
     }
   },
@@ -729,15 +721,19 @@ class BirthdayModule {
   }
 
   async loadBirthdays(options = {}) {
-    const fallback = {
+    const empty = {
       date: todayInTimeZone(this.config.timezone || DEFAULT_TIMEZONE),
       timezone: this.config.timezone || DEFAULT_TIMEZONE,
-      count: this.config.mockBirthdays?.length || 0,
-      birthdays: this.config.mockBirthdays || []
+      count: 0,
+      birthdays: []
     };
 
-    if (options.sandbox || this.engine.options.sandbox || this.config.mode === "mock") {
-      return fallback;
+    if (this.config.mode === "mock") {
+      return {
+        ...empty,
+        count: this.config.mockBirthdays?.length || 0,
+        birthdays: this.config.mockBirthdays || []
+      };
     }
 
     try {
@@ -749,11 +745,16 @@ class BirthdayModule {
         }
       });
       if (!response.ok) {
-        return fallback;
+        return empty;
       }
-      return response.json();
+      const payload = await response.json();
+      return {
+        ...empty,
+        ...payload,
+        birthdays: Array.isArray(payload.birthdays) ? payload.birthdays : []
+      };
     } catch {
-      return fallback;
+      return empty;
     }
   }
 
@@ -1255,47 +1256,24 @@ class MundialModule {
   }
 
   async loadMatches() {
-    const fallback = {
-      matches: [
-        {
-          time: "18:00",
-          home: "Mexico",
-          away: "Korea Republic",
-          venue: "Estadio Azteca",
-          source: "mock"
-        },
-        {
-          time: "20:30",
-          home: "United States",
-          away: "Ghana",
-          venue: "MetLife Stadium",
-          source: "mock"
-        }
-      ]
-    };
-
-    if (this.engine.options.sandbox) {
-      this.engine.setWorldCupWidget(this.config, fallback.matches);
-      return;
-    }
-
     try {
-      const separator = String(this.config.sportsApiUrl || "").includes("?") ? "&" : "?";
+      const apiUrl = this.config.sportsApiUrl || DEFAULT_CONFIG.festivities.mundial_2026.sportsApiUrl;
+      const separator = String(apiUrl || "").includes("?") ? "&" : "?";
       const today = todayInTimeZone(DEFAULT_TIMEZONE);
-      const response = await fetch(`${this.config.sportsApiUrl || "/__eei/mock-worldcup-matches"}${separator}date=${encodeURIComponent(today)}`, {
+      const response = await fetch(`${apiUrl}${separator}date=${encodeURIComponent(today)}`, {
         cache: "no-store",
         credentials: "same-origin",
         headers: {
           Accept: "application/json"
         }
       });
-      const data = response.ok ? await response.json() : fallback;
+      const data = response.ok ? await response.json() : { matches: [] };
       if (this.active) {
-        this.engine.setWorldCupWidget(this.config, data.matches || []);
+        this.engine.setWorldCupWidget(this.config, Array.isArray(data.matches) ? data.matches : []);
       }
     } catch {
       if (this.active) {
-        this.engine.setWorldCupWidget(this.config, fallback.matches);
+        this.engine.setWorldCupWidget(this.config, []);
       }
     }
   }

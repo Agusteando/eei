@@ -14,7 +14,11 @@ binding = "ASSETS"
 
 [vars]
 SIGNIA_BIRTHDAY_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays"
+FOOTBALL_DATA_BASE_URL = "https://api.football-data.org/v4"
+FOOTBALL_DATA_COMPETITION_CODE = "WC"
+FOOTBALL_DATA_SEASON = "2026"
 
 # Optional production secrets:
 # wrangler secret put EEI_ADMIN_TOKEN
+# wrangler secret put FOOTBALL_DATA_API_TOKEN
 # wrangler secret put UPSTREAM_ORIGIN

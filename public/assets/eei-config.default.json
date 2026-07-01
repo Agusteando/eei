@@ -20,15 +20,7 @@
     "timezone": "America/Mexico_City",
     "showOncePerDay": true,
     "toastDurationMs": 9500,
-    "mockBirthdays": [
-      {
-        "id": 123,
-        "name": "Nombre Apellido",
-        "puesto": "Docente",
-        "plantel": "Plantel Centro",
-        "cumpleanos": "06-30"
-      }
-    ]
+    "mockBirthdays": []
   },
   "festivities": {
     "christmas": {
@@ -43,7 +35,7 @@
     "mundial_2026": {
       "enabled": false,
       "intensity": 0.72,
-      "sportsApiUrl": "/__eei/mock-worldcup-matches",
+      "sportsApiUrl": "/__eei/worldcup-matches",
       "priorityTeam": "Mexico"
     }
   },

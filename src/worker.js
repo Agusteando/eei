@@ -1,5 +1,8 @@
 const CONFIG_KEY = "config";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
+const FOOTBALL_DATA_DEFAULT_BASE_URL = "https://api.football-data.org/v4";
+const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
+const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
   version: 1,
@@ -23,15 +26,7 @@ const DEFAULT_CONFIG = {
     timezone: "America/Mexico_City",
     showOncePerDay: true,
     toastDurationMs: 9500,
-    mockBirthdays: [
-      {
-        id: 123,
-        name: "Nombre Apellido",
-        puesto: "Docente",
-        plantel: "Plantel Centro",
-        cumpleanos: "06-30"
-      }
-    ]
+    mockBirthdays: []
   },
   festivities: {
     christmas: {
@@ -46,7 +41,7 @@ const DEFAULT_CONFIG = {
     mundial_2026: {
       enabled: false,
       intensity: 0.72,
-      sportsApiUrl: "/__eei/mock-worldcup-matches",
+      sportsApiUrl: "/__eei/worldcup-matches",
       priorityTeam: "Mexico"
     }
   },
@@ -83,8 +78,8 @@ export default {
       return handleSigniaBirthdays(env);
     }
 
-    if (url.pathname === "/__eei/mock-worldcup-matches") {
-      return handleMockWorldCupMatches(request);
+    if (url.pathname === "/__eei/worldcup-matches") {
+      return handleWorldCupMatches(request, env);
     }
 
     if (url.pathname === "/__eei/engine.js") {
@@ -157,7 +152,7 @@ async function readConfig(env) {
 
   try {
     const stored = await env.EEI_CONFIG.get(CONFIG_KEY, { type: "json" });
-    return deepMerge(DEFAULT_CONFIG, stored || {});
+    return normalizeRuntimeConfig(deepMerge(DEFAULT_CONFIG, stored || {}));
   } catch {
     return structuredClone(DEFAULT_CONFIG);
   }
@@ -186,6 +181,7 @@ async function requireAdmin(request, env) {
 
 async function handleSigniaBirthdays(env) {
   const endpoint = env.SIGNIA_BIRTHDAY_URL || SIGNIA_DEFAULT_URL;
+  const timezone = "America/Mexico_City";
   try {
     const upstream = await fetch(endpoint, {
       headers: {
@@ -197,75 +193,126 @@ async function handleSigniaBirthdays(env) {
       }
     });
 
-    const body = await upstream.text();
-    return withCors(new Response(body, {
-      status: upstream.status,
-      headers: {
-        "Content-Type": upstream.headers.get("Content-Type") || "application/json; charset=utf-8",
-        "Cache-Control": "public, max-age=120"
-      }
-    }));
+    if (!upstream.ok) {
+      return json({
+        date: todayInTimeZone(timezone),
+        timezone,
+        count: 0,
+        birthdays: [],
+        error: "Could not fetch Signia birthdays",
+        providerStatus: upstream.status
+      }, {
+        "Cache-Control": "no-store"
+      }, 502);
+    }
+
+    const payload = await upstream.json().catch(() => null);
+    const normalized = normalizeBirthdayPayload(payload, timezone);
+    return json(normalized, {
+      "Cache-Control": "public, max-age=120"
+    });
   } catch (error) {
     return json({
+      date: todayInTimeZone(timezone),
+      timezone,
+      count: 0,
+      birthdays: [],
       error: "Could not fetch Signia birthdays",
       detail: String(error && error.message ? error.message : error)
     }, {}, 502);
   }
 }
 
-function handleMockWorldCupMatches(request) {
+async function handleWorldCupMatches(request, env) {
+  const token = env.FOOTBALL_DATA_API_TOKEN;
+  const timezone = "America/Mexico_City";
   const url = new URL(request.url);
-  const date = url.searchParams.get("date") || todayInTimeZone("America/Mexico_City");
-  const matches = [
-    {
-      id: `${date}-mexico-1`,
-      date,
-      time: "18:00",
-      status: "scheduled",
-      competition: "FIFA World Cup 2026",
-      home: "Mexico",
-      away: "Korea Republic",
-      venue: "Estadio Azteca",
-      city: "Ciudad de Mexico",
-      priority: 1,
-      source: "mock"
-    },
-    {
-      id: `${date}-canada-1`,
-      date,
-      time: "15:00",
-      status: "scheduled",
-      competition: "FIFA World Cup 2026",
-      home: "Canada",
-      away: "Croatia",
-      venue: "BC Place",
-      city: "Vancouver",
-      priority: 3,
-      source: "mock"
-    },
-    {
-      id: `${date}-usa-1`,
-      date,
-      time: "20:30",
-      status: "scheduled",
-      competition: "FIFA World Cup 2026",
-      home: "United States",
-      away: "Ghana",
-      venue: "MetLife Stadium",
-      city: "New York New Jersey",
-      priority: 4,
-      source: "mock"
-    }
-  ];
+  const date = url.searchParams.get("date") || todayInTimeZone(timezone);
+  const dateFrom = url.searchParams.get("dateFrom") || date;
+  const dateTo = url.searchParams.get("dateTo") || date;
 
-  return json({
-    date,
-    timezone: "America/Mexico_City",
-    source: "mock",
-    matches
-  }, {
-    "Cache-Control": "public, max-age=60"
-  });
+  if (!token) {
+    return json({
+      date,
+      dateFrom,
+      dateTo,
+      timezone,
+      source: "football-data.org",
+      count: 0,
+      matches: [],
+      error: "FOOTBALL_DATA_API_TOKEN is not configured"
+    }, {
+      "Cache-Control": "no-store"
+    }, 503);
+  }
+
+  const baseUrl = env.FOOTBALL_DATA_BASE_URL || FOOTBALL_DATA_DEFAULT_BASE_URL;
+  const competition = env.FOOTBALL_DATA_COMPETITION_CODE || FOOTBALL_DATA_DEFAULT_COMPETITION;
+  const season = url.searchParams.get("season") || env.FOOTBALL_DATA_SEASON || FOOTBALL_DATA_DEFAULT_SEASON;
+  const upstreamUrl = new URL(`${baseUrl.replace(/\/$/, "")}/competitions/${encodeURIComponent(competition)}/matches`);
+  upstreamUrl.searchParams.set("dateFrom", dateFrom);
+  upstreamUrl.searchParams.set("dateTo", dateTo);
+  if (season) {
+    upstreamUrl.searchParams.set("season", season);
+  }
+
+  try {
+    const upstream = await fetch(upstreamUrl.toString(), {
+      headers: {
+        Accept: "application/json",
+        "X-Auth-Token": token
+      },
+      cf: {
+        cacheTtl: 300,
+        cacheEverything: true
+      }
+    });
+
+    const payload = await upstream.json().catch(() => null);
+    if (!upstream.ok) {
+      return json({
+        date,
+        dateFrom,
+        dateTo,
+        timezone,
+        source: "football-data.org",
+        count: 0,
+        matches: [],
+        error: "Could not fetch World Cup matches",
+        providerStatus: upstream.status,
+        detail: payload && (payload.message || payload.error)
+      }, {
+        "Cache-Control": "no-store"
+      }, 502);
+    }
+
+    const matches = normalizeFootballDataMatches(Array.isArray(payload?.matches) ? payload.matches : [], timezone);
+    return json({
+      date,
+      dateFrom,
+      dateTo,
+      timezone,
+      source: "football-data.org",
+      competition,
+      season,
+      count: matches.length,
+      matches
+    }, {
+      "Cache-Control": "public, max-age=300"
+    });
+  } catch (error) {
+    return json({
+      date,
+      dateFrom,
+      dateTo,
+      timezone,
+      source: "football-data.org",
+      count: 0,
+      matches: [],
+      error: "Could not fetch World Cup matches",
+      detail: String(error && error.message ? error.message : error)
+    }, {}, 502);
+  }
 }
 
 async function fetchUpstream(request, env) {
@@ -403,6 +450,148 @@ function deepMerge(base, override) {
   }
 
   return output;
+}
+
+
+function normalizeRuntimeConfig(config) {
+  const output = structuredClone(config);
+  if (output?.festivities?.mundial_2026) {
+    const current = String(output.festivities.mundial_2026.sportsApiUrl || "");
+    if (!current || current.includes("mock-worldcup-matches")) {
+      output.festivities.mundial_2026.sportsApiUrl = "/__eei/worldcup-matches";
+    }
+  }
+  if (output?.birthday && !Array.isArray(output.birthday.mockBirthdays)) {
+    output.birthday.mockBirthdays = [];
+  }
+  return output;
+}
+
+function normalizeBirthdayPayload(payload, timeZone) {
+  const date = todayInTimeZone(timeZone);
+  const sourceList = findFirstArray(payload, ["birthdays", "cumpleanos", "cumpleaneros", "employees", "data", "results", "items"]);
+  const rawList = Array.isArray(payload) ? payload : sourceList || [];
+  const birthdays = rawList
+    .filter(Boolean)
+    .filter((person) => birthdayEntryMatchesToday(person, date))
+    .map(normalizeBirthdayPerson);
+
+  return {
+    date,
+    timezone: timeZone,
+    count: birthdays.length,
+    birthdays
+  };
+}
+
+function findFirstArray(payload, keys) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  for (const key of keys) {
+    if (Array.isArray(payload[key])) {
+      return payload[key];
+    }
+  }
+  return null;
+}
+
+function normalizeBirthdayPerson(person) {
+  return {
+    id: person.id || person.employeeId || person.numeroEmpleado || person.email || person.name || person.nombre || crypto.randomUUID(),
+    name: person.name || person.nombre || person.fullName || person.nombreCompleto || "Colaborador",
+    puesto: person.puesto || person.position || person.cargo || person.title || "",
+    plantel: person.plantel || person.campus || person.school || person.sede || "",
+    cumpleanos: person.cumpleanos || person.birthday || person.birthdate || person.fechaNacimiento || ""
+  };
+}
+
+function birthdayEntryMatchesToday(person, today) {
+  const value = person.cumpleanos || person.birthday || person.birthdate || person.fechaNacimiento || person.date || "";
+  if (!value) {
+    return true;
+  }
+
+  const normalized = String(value).trim();
+  const monthDay = today.slice(5);
+  if (/^\d{2}-\d{2}$/.test(normalized)) {
+    return normalized === monthDay;
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(normalized)) {
+    return normalized.slice(5, 10) === monthDay;
+  }
+  if (/^\d{2}\/\d{2}(?:\/\d{4})?$/.test(normalized)) {
+    const [first, second] = normalized.split("/");
+    return `${first.padStart(2, "0")}-${second.padStart(2, "0")}` === monthDay;
+  }
+  return true;
+}
+
+function normalizeFootballDataMatches(matches, timeZone) {
+  return matches.map((match) => {
+    const home = match.homeTeam || {};
+    const away = match.awayTeam || {};
+    const score = match.score || {};
+    const fullTime = score.fullTime || {};
+    const penalties = score.penalties || {};
+    return {
+      id: String(match.id || match.utcDate || `${home.name || "home"}-${away.name || "away"}`),
+      date: match.utcDate ? formatDateInTimeZone(match.utcDate, timeZone) : "",
+      time: match.utcDate ? formatTimeInTimeZone(match.utcDate, timeZone) : "TBD",
+      utcDate: match.utcDate || "",
+      status: normalizeFootballStatus(match.status),
+      stage: match.stage || "",
+      group: match.group || "",
+      competition: match.competition?.name || "FIFA World Cup",
+      home: home.shortName || home.tla || home.name || "Home",
+      away: away.shortName || away.tla || away.name || "Away",
+      venue: match.venue || "World Cup 2026",
+      city: "",
+      score: {
+        home: fullTime.home ?? null,
+        away: fullTime.away ?? null,
+        penaltiesHome: penalties.home ?? null,
+        penaltiesAway: penalties.away ?? null
+      },
+      source: "football-data.org"
+    };
+  });
+}
+
+function normalizeFootballStatus(status) {
+  const normalized = String(status || "").toUpperCase();
+  if (["SCHEDULED", "TIMED"].includes(normalized)) {
+    return "scheduled";
+  }
+  if (["IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTY_SHOOTOUT"].includes(normalized)) {
+    return "live";
+  }
+  if (normalized === "FINISHED") {
+    return "finished";
+  }
+  return normalized.toLowerCase() || "scheduled";
+}
+
+function formatDateInTimeZone(value, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date(value));
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${byType.year}-${byType.month}-${byType.day}`;
+}
+
+function formatTimeInTimeZone(value, timeZone) {
+  const parts = new Intl.DateTimeFormat("es-MX", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(new Date(value));
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${byType.hour}:${byType.minute}`;
 }
 
 function todayInTimeZone(timeZone) {
