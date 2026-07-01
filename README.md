@@ -1,36 +1,9 @@
-# EEI
+EEI unified configurable gateway v6
 
-Enterprise Experience Injector.
+- Removes hardcoded ISV hostname exclusions.
+- Adds configurable ISV include/exclude host lists in admin UI.
+- Empty include list means ISV applies to every hostname routed to eei.
+- Supports exact hosts and wildcard patterns such as *.casitaapps.com.
+- Bumps engine/cache to 2026-07-01-v6 / 0.6.0 / config version 6.
 
-This package includes the v4 mobile-first admin UI update.
-
-## Admin behavior
-
-Open:
-
-```txt
-/eei-admin.html?v=2026-07-01-v4
-```
-
-The admin loads `/__eei/config` automatically on startup. This means a reload shows the last saved KV config, not the static defaults bundled with the page.
-
-The Admin key can be saved on the current device through `localStorage`. Use **Olvidar** on shared computers.
-
-## Validation
-
-```bash
-node --check src/worker.js
-node --check public/eei-engine.js
-```
-
-## v5 unified route owner: EEI + ISV
-
-This patch keeps ISV as a separate Pages-hosted campaign and makes the EEI Worker the single Cloudflare route owner.
-
-- EEI continues to inject `/__eei/engine.js`.
-- EEI also injects `https://isv-ev2.pages.dev/isv-banner.js`.
-- ISV code is not merged into EEI. EEI only adds the external ISV script tag.
-- `casitaiedis.edu.mx` and `www.casitaiedis.edu.mx` are excluded by default as a safety guard.
-- Header `X-ISV-Gateway-Injected: 1` is set when the ISV script is injected.
-
-Migration rule: move routes from the old ISV Worker to the EEI Worker one by one after testing. Do not delete ISV Pages.
+Deployment target remains Worker name: eei.

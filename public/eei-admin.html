@@ -621,6 +621,12 @@
                 <label class="field">ISV script URL
                   <input type="text" data-bind="campaigns.isv.scriptUrl" spellcheck="false">
                 </label>
+                <label class="field">ISV sólo en estos hosts <small>Opcional. Uno por línea. Ej: *.casitaapps.com</small>
+                  <textarea id="isvIncludeHostnames" spellcheck="false" placeholder="Vacío = todos los hosts ruteados"></textarea>
+                </label>
+                <label class="field">ISV excluir estos hosts <small>Opcional. Uno por línea.</small>
+                  <textarea id="isvExcludeHostnames" spellcheck="false" placeholder="Ej: casitaiedis.edu.mx"></textarea>
+                </label>
               </div>
               <p class="micro">Para producción, cumpleaños debe quedar en <strong>api</strong>. El botón de preview usa datos falsos sólo dentro del admin.</p>
             </div>
@@ -649,7 +655,7 @@
   </nav>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v5";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v6";
 
     const TOKEN_STORAGE_KEY = "eei:adminToken";
     const REMEMBER_STORAGE_KEY = "eei:rememberToken";
@@ -681,7 +687,9 @@
       previewMundialBtn: document.getElementById("previewMundialBtn"),
       clearPreviewBtn: document.getElementById("clearPreviewBtn"),
       applyJsonBtn: document.getElementById("applyJsonBtn"),
-      formatJsonBtn: document.getElementById("formatJsonBtn")
+      formatJsonBtn: document.getElementById("formatJsonBtn"),
+      isvIncludeHostnames: document.getElementById("isvIncludeHostnames"),
+      isvExcludeHostnames: document.getElementById("isvExcludeHostnames")
     };
 
     boot();
@@ -723,6 +731,18 @@
       refs.previewBirthdayBtn.addEventListener("click", previewBirthday);
       refs.previewMundialBtn.addEventListener("click", previewMundial);
       refs.clearPreviewBtn.addEventListener("click", clearPreview);
+      refs.isvIncludeHostnames.addEventListener("input", () => {
+        ensureIsvConfig();
+        state.campaigns.isv.includeHostnames = parseHostList(refs.isvIncludeHostnames.value);
+        markDirty();
+        render();
+      });
+      refs.isvExcludeHostnames.addEventListener("input", () => {
+        ensureIsvConfig();
+        state.campaigns.isv.excludeHostnames = parseHostList(refs.isvExcludeHostnames.value);
+        markDirty();
+        render();
+      });
       refs.applyJsonBtn.addEventListener("click", applyJson);
       refs.formatJsonBtn.addEventListener("click", () => {
         refs.jsonEditor.value = JSON.stringify(state, null, 2);
@@ -881,6 +901,8 @@
 
     function render() {
       syncControls();
+      refs.isvIncludeHostnames.value = formatHostList(state.campaigns?.isv?.includeHostnames);
+      refs.isvExcludeHostnames.value = formatHostList(state.campaigns?.isv?.excludeHostnames);
       refs.jsonEditor.value = JSON.stringify(state, null, 2);
 
       const activeModules = [
@@ -916,6 +938,22 @@
 
     function readControls() {
       document.querySelectorAll("[data-bind]").forEach(writeControl);
+    }
+
+    function formatHostList(value) {
+      return Array.isArray(value) ? value.join("\n") : "";
+    }
+
+    function parseHostList(value) {
+      return String(value || "")
+        .split(/[\n,]/)
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean);
+    }
+
+    function ensureIsvConfig() {
+      state.campaigns = state.campaigns || {};
+      state.campaigns.isv = state.campaigns.isv || {};
     }
 
     function writeControl(control) {

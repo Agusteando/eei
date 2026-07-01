@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "enabled": true,
   "assetsBaseUrl": "auto",
   "performance": {
@@ -64,10 +64,8 @@
     "isv": {
       "enabled": true,
       "scriptUrl": "https://isv-ev2.pages.dev/isv-banner.js",
-      "excludeHostnames": [
-        "casitaiedis.edu.mx",
-        "www.casitaiedis.edu.mx"
-      ]
+      "includeHostnames": [],
+      "excludeHostnames": []
     }
   }
 }
