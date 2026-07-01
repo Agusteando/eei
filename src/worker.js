@@ -1,5 +1,5 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v8";
+const EEI_ASSET_VERSION = "2026-07-01-v12";
 const ISV_DEFAULT_SCRIPT_URL = "https://isv-ev2.pages.dev/isv-banner.js";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const FOOTBALL_DATA_DEFAULT_BASE_URL = "https://api.football-data.org/v4";
@@ -7,7 +7,7 @@ const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 8,
+  version: 12,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -39,6 +39,7 @@ const DEFAULT_CONFIG = {
     timezone: "America/Mexico_City",
     showOncePerDay: true,
     toastDurationMs: 9500,
+    subscriptionPrompt: true,
     mockBirthdays: []
   },
   festivities: {
@@ -200,57 +201,106 @@ async function requireAdmin(request, env) {
   return { ok: false, status: 401, error: "Missing or invalid admin token" };
 }
 
+function uniqueNonEmpty(values) {
+  const seen = new Set();
+  const output = [];
+  for (const value of values) {
+    const normalized = String(value || "").trim();
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    output.push(normalized);
+  }
+  return output;
+}
+
+function cleanDebugAttempt(value) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entryValue]) => entryValue !== undefined && entryValue !== "")
+  );
+}
+
 async function handleSigniaBirthdays(request, env) {
-  const endpoint = env.SIGNIA_BIRTHDAY_URL || SIGNIA_DEFAULT_URL;
   const timezone = "America/Mexico_City";
   const debug = new URL(request.url).searchParams.get("debug") === "1";
-  try {
-    const upstream = await fetch(endpoint, {
-      headers: {
-        Accept: "application/json"
-      },
-      cf: {
-        cacheTtl: 120,
-        cacheEverything: true
-      }
-    });
+  const endpoints = uniqueNonEmpty([
+    env.SIGNIA_BIRTHDAY_URL,
+    SIGNIA_DEFAULT_URL
+  ]);
+  const attempts = [];
 
-    if (!upstream.ok) {
-      return json({
-        date: todayInTimeZone(timezone),
-        timezone,
-        count: 0,
-        birthdays: [],
-        error: "Could not fetch Signia birthdays",
-        providerStatus: upstream.status
-      }, {
-        "Cache-Control": "no-store"
-      }, 502);
+  for (const endpoint of endpoints) {
+    try {
+      const upstream = await fetch(endpoint, {
+        headers: {
+          Accept: "application/json"
+        },
+        cf: debug ? undefined : {
+          cacheTtl: 120,
+          cacheEverything: true
+        }
+      });
+
+      const contentType = upstream.headers.get("Content-Type") || "";
+      const bodyText = await upstream.text();
+      let payload = null;
+      if (bodyText) {
+        try {
+          payload = JSON.parse(bodyText);
+        } catch {
+          payload = null;
+        }
+      }
+
+      attempts.push(cleanDebugAttempt({
+        url: endpoint,
+        ok: upstream.ok,
+        status: upstream.status,
+        contentType,
+        bodyPreview: debug && !upstream.ok ? bodyText.slice(0, 500) : undefined
+      }));
+
+      if (!upstream.ok) {
+        continue;
+      }
+
+      const normalized = normalizeBirthdayPayload(payload, timezone);
+      return json(debug ? {
+        ...normalized,
+        debug: {
+          provider: "signia",
+          providerUrl: endpoint,
+          providerStatus: upstream.status,
+          attempts,
+          raw: payload
+        }
+      } : normalized, {
+        "Cache-Control": debug ? "no-store" : "public, max-age=120"
+      });
+    } catch (error) {
+      attempts.push(cleanDebugAttempt({
+        url: endpoint,
+        ok: false,
+        status: 0,
+        error: String(error && error.message ? error.message : error)
+      }));
     }
-
-    const payload = await upstream.json().catch(() => null);
-    const normalized = normalizeBirthdayPayload(payload, timezone);
-    return json(debug ? {
-      ...normalized,
-      debug: {
-        provider: "signia",
-        providerUrl: endpoint,
-        providerStatus: upstream.status,
-        raw: payload
-      }
-    } : normalized, {
-      "Cache-Control": debug ? "no-store" : "public, max-age=120"
-    });
-  } catch (error) {
-    return json({
-      date: todayInTimeZone(timezone),
-      timezone,
-      count: 0,
-      birthdays: [],
-      error: "Could not fetch Signia birthdays",
-      detail: String(error && error.message ? error.message : error)
-    }, {}, 502);
   }
+
+  const lastAttempt = attempts[attempts.length - 1] || {};
+  return json({
+    date: todayInTimeZone(timezone),
+    timezone,
+    count: 0,
+    birthdays: [],
+    error: "Could not fetch Signia birthdays",
+    providerUrl: lastAttempt.url || endpoints[0] || SIGNIA_DEFAULT_URL,
+    providerStatus: lastAttempt.status || 0,
+    ...(debug ? { debug: { provider: "signia", attempts } } : {})
+  }, {
+    "Cache-Control": "no-store"
+  }, 502);
 }
 
 async function handleWorldCupMatches(request, env) {
@@ -667,13 +717,72 @@ function findFirstArray(payload, keys) {
 }
 
 function normalizeBirthdayPerson(person) {
+  const plantel = normalizePlantelEntity(person.plantel, person.plantelId, person.plantelName || person.campus || person.school || person.sede);
+  const plantelFisico = normalizePlantelEntity(
+    person.plantelFisico || person.plantel_fisico,
+    person.plantelFisicoId || person.plantel_fisico_id,
+    person.plantelFisicoName || person.plantel_fisico || ""
+  );
+  const notificationPlantel = plantelFisico || plantel;
+  const displayName = person.displayName || person.nombreCompleto || person.fullName || person.name || person.nombre || "Colaborador";
+  const colaborador = person.colaborador && typeof person.colaborador === "object" ? person.colaborador : {
+    id: person.id || person.employeeId || person.numeroEmpleado || person.email || displayName,
+    displayName,
+    puesto: person.puesto || person.position || person.cargo || person.title || ""
+  };
+
   return {
-    id: person.id || person.employeeId || person.numeroEmpleado || person.email || person.name || person.nombre || crypto.randomUUID(),
-    name: person.name || person.nombre || person.fullName || person.nombreCompleto || "Colaborador",
-    puesto: person.puesto || person.position || person.cargo || person.title || "",
-    plantel: person.plantel || person.campus || person.school || person.sede || "",
+    id: person.id || person.employeeId || person.numeroEmpleado || person.email || displayName || crypto.randomUUID(),
+    name: displayName,
+    displayName,
+    puesto: person.puesto || colaborador.puesto || person.position || person.cargo || person.title || "",
+    plantel: notificationPlantel?.name || notificationPlantel?.label || "",
+    plantelName: notificationPlantel?.name || notificationPlantel?.label || "",
+    plantelKey: plantelKey(notificationPlantel),
+    plantelId: notificationPlantel?.id || "",
+    plantelOriginal: plantel,
+    plantelFisico,
+    colaborador,
+    fechaNacimiento: person.fechaNacimiento || person.fecha_nacimiento || "",
     cumpleanos: person.cumpleanos || person.birthday || person.birthdate || person.fechaNacimiento || person.fecha_nacimiento || person.dateOfBirth || person.birthDate || ""
   };
+}
+
+function normalizePlantelEntity(value, fallbackId = "", fallbackName = "") {
+  if (value && typeof value === "object") {
+    const id = value.id ?? value.plantelId ?? value.value ?? fallbackId ?? "";
+    const name = value.name || value.nombre || value.label || value.displayName || fallbackName || "";
+    const label = value.label || name;
+    if (!id && !name && !label) {
+      return null;
+    }
+    return {
+      id: id === null || id === undefined ? "" : String(id),
+      name: String(name || label || id || "Plantel"),
+      label: String(label || name || id || "Plantel")
+    };
+  }
+
+  const name = fallbackName || value || "";
+  if (!fallbackId && !name) {
+    return null;
+  }
+  return {
+    id: fallbackId === null || fallbackId === undefined ? "" : String(fallbackId),
+    name: String(name || fallbackId || "Plantel"),
+    label: String(name || fallbackId || "Plantel")
+  };
+}
+
+function plantelKey(plantel) {
+  if (!plantel) {
+    return "";
+  }
+  if (plantel.id) {
+    return `id:${String(plantel.id)}`;
+  }
+  const name = plantel.name || plantel.label || "";
+  return name ? `name:${name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}` : "";
 }
 
 function birthdayEntryMatchesToday(person, today) {

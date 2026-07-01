@@ -1,11 +1,11 @@
 import * as THREE from "./vendor/three.module.js";
 
-const EEI_VERSION = "0.8.0";
+const EEI_VERSION = "0.12.0";
 const MAX_Z_INDEX = "2147483647";
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
 export const DEFAULT_CONFIG = {
-  version: 8,
+  version: 12,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -37,6 +37,7 @@ export const DEFAULT_CONFIG = {
     timezone: DEFAULT_TIMEZONE,
     showOncePerDay: true,
     toastDurationMs: 9500,
+    subscriptionPrompt: true,
     mockBirthdays: []
   },
   festivities: {
@@ -737,7 +738,15 @@ class BirthdayModule {
       return;
     }
 
-    const birthdays = Array.isArray(data.birthdays) ? data.birthdays : [];
+    const allBirthdays = Array.isArray(data.birthdays) ? data.birthdays.map(normalizeBirthdayRecord) : [];
+    if (allBirthdays.length === 0) {
+      return;
+    }
+
+    this.rememberKnownPlanteles(allBirthdays);
+    const birthdays = this.filterBySubscribedPlanteles(allBirthdays);
+    this.showPlantelSubscriptionPrompt(allBirthdays, config);
+
     if (birthdays.length === 0) {
       return;
     }
@@ -761,8 +770,9 @@ class BirthdayModule {
         if (!this.active) {
           return;
         }
-        const name = person.name || "Colaborador";
-        const detail = [person.puesto, person.plantel].filter(Boolean).join(" · ");
+        const name = person.displayName || person.name || "Colaborador";
+        const plantelName = getBirthdayPlantel(person)?.name || person.plantelName || person.plantel || "";
+        const detail = [person.puesto, plantelName].filter(Boolean).join(" · ");
         this.engine.showToast(`birthday-${cssEscape(String(person.id || index))}`, {
           eyebrow: "Cumpleaños de hoy",
           title: `Hoy celebramos a ${name}`,
@@ -811,6 +821,124 @@ class BirthdayModule {
     } catch {
       return empty;
     }
+  }
+
+  filterBySubscribedPlanteles(birthdays) {
+    const preference = readBirthdayPlantelPreference();
+    if (preference.mode !== "custom") {
+      return birthdays;
+    }
+
+    const selected = new Set(Array.isArray(preference.selected) ? preference.selected : []);
+    if (selected.size === 0) {
+      return [];
+    }
+
+    return birthdays.filter((person) => {
+      const plantel = getBirthdayPlantel(person);
+      return plantel && selected.has(plantel.key);
+    });
+  }
+
+  rememberKnownPlanteles(birthdays) {
+    const current = listUniquePlanteles(birthdays);
+    if (current.length === 0) {
+      return;
+    }
+
+    const known = readKnownBirthdayPlanteles();
+    const merged = mergePlantelLists(known, current).slice(0, 60);
+    writeKnownBirthdayPlanteles(merged);
+  }
+
+  showPlantelSubscriptionPrompt(birthdays, config = {}) {
+    if (config.subscriptionPrompt === false) {
+      return;
+    }
+
+    const currentPlanteles = listUniquePlanteles(birthdays);
+    if (currentPlanteles.length === 0) {
+      return;
+    }
+
+    const knownPlanteles = mergePlantelLists(readKnownBirthdayPlanteles(), currentPlanteles).slice(0, 60);
+    const existing = this.engine.uiLayer.querySelector("[data-eei-widget='birthday-planteles']");
+    existing?.remove();
+
+    const card = document.createElement("section");
+    card.className = "eei-birthday-plantel-card";
+    card.dataset.eeiWidget = "birthday-planteles";
+    card.innerHTML = `
+      <img src="${escapeAttribute(this.engine.assetUrl("ambassadors", "birthday"))}" alt="" loading="eager">
+      <div>
+        <p>Recibir notificaciones de cumpleaños de plantel${currentPlanteles.length > 1 ? "es" : ""}</p>
+        <strong>(${escapeHtml(currentPlanteles.map((plantel) => plantel.name).join(", "))})</strong>
+        <button type="button">Elegir planteles</button>
+      </div>
+    `;
+
+    card.querySelector("button")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.openPlantelSubscriptionModal(knownPlanteles);
+    });
+
+    this.engine.uiLayer.appendChild(card);
+  }
+
+  openPlantelSubscriptionModal(planteles) {
+    const existing = this.engine.uiLayer.querySelector("[data-eei-modal='birthday-planteles']");
+    existing?.remove();
+
+    const preference = readBirthdayPlantelPreference();
+    const allByDefault = preference.mode !== "custom";
+    const selected = new Set(allByDefault ? planteles.map((plantel) => plantel.key) : preference.selected || []);
+
+    const modal = document.createElement("section");
+    modal.className = "eei-birthday-plantel-modal";
+    modal.dataset.eeiModal = "birthday-planteles";
+    modal.innerHTML = `
+      <div class="eei-birthday-plantel-dialog" role="dialog" aria-modal="true" aria-label="Notificaciones de cumpleaños por plantel">
+        <button class="eei-modal-close" type="button" aria-label="Cerrar">×</button>
+        <h2>Cumpleaños por plantel</h2>
+        <p>Elige los planteles de los que quieres recibir cumpleaños. Por defecto están todos activos.</p>
+        <div class="eei-birthday-plantel-list">
+          ${planteles.map((plantel) => `
+            <label>
+              <input type="checkbox" value="${escapeAttribute(plantel.key)}" ${selected.has(plantel.key) ? "checked" : ""}>
+              <span>${escapeHtml(plantel.name)}</span>
+            </label>
+          `).join("")}
+        </div>
+        <div class="eei-birthday-plantel-actions">
+          <button type="button" data-action="all">Todos</button>
+          <button type="button" data-action="save">Guardar</button>
+        </div>
+      </div>
+    `;
+
+    const close = () => modal.remove();
+    modal.querySelector(".eei-modal-close")?.addEventListener("click", close);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        close();
+      }
+    });
+    modal.querySelector("[data-action='all']")?.addEventListener("click", () => {
+      writeBirthdayPlantelPreference({ mode: "all", selected: [], updatedAt: new Date().toISOString() });
+      close();
+    });
+    modal.querySelector("[data-action='save']")?.addEventListener("click", () => {
+      const checked = [...modal.querySelectorAll("input[type='checkbox']:checked")].map((input) => input.value);
+      const allSelected = checked.length === planteles.length;
+      writeBirthdayPlantelPreference({
+        mode: allSelected ? "all" : "custom",
+        selected: allSelected ? [] : checked,
+        updatedAt: new Date().toISOString()
+      });
+      close();
+    });
+
+    this.engine.uiLayer.appendChild(modal);
   }
 
   hasShown(date) {
@@ -989,6 +1117,8 @@ class BirthdayModule {
   stop() {
     this.active = false;
     this.disposeRelease();
+    this.engine.uiLayer?.querySelector("[data-eei-widget='birthday-planteles']")?.remove();
+    this.engine.uiLayer?.querySelector("[data-eei-modal='birthday-planteles']")?.remove();
   }
 }
 
@@ -1871,6 +2001,186 @@ function safeLocalStorageSet(key, value) {
   }
 }
 
+
+function normalizeBirthdayRecord(person) {
+  if (!person || typeof person !== "object") {
+    return {};
+  }
+
+  const plantel = normalizePlantelEntity(person.plantel || person.plantelOriginal, person.plantelId || "", person.plantelName || person.campus || person.school || person.sede || "");
+  const plantelFisico = normalizePlantelEntity(person.plantelFisico || person.plantel_fisico, person.plantelFisicoId || person.plantel_fisico_id || "", person.plantelFisicoName || "");
+  const notificationPlantel = plantelFisico || plantel;
+  const displayName = person.displayName || person.name || person.nombreCompleto || person.fullName || person.nombre || person.colaborador?.displayName || person.colaborador?.name || "Colaborador";
+
+  return {
+    ...person,
+    name: displayName,
+    displayName,
+    puesto: person.puesto || person.colaborador?.puesto || person.position || person.cargo || "",
+    plantel: notificationPlantel?.name || person.plantelName || (typeof person.plantel === "string" ? person.plantel : ""),
+    plantelName: notificationPlantel?.name || person.plantelName || "",
+    plantelKey: notificationPlantel?.key || person.plantelKey || "",
+    plantelOriginal: plantel,
+    plantelFisico
+  };
+}
+
+function normalizePlantelEntity(value, fallbackId = "", fallbackName = "") {
+  if (value && typeof value === "object") {
+    const id = value.id ?? value.plantelId ?? value.value ?? fallbackId ?? "";
+    const name = value.name || value.nombre || value.label || value.displayName || fallbackName || "";
+    const label = value.label || name;
+    if (!id && !name && !label) {
+      return null;
+    }
+    const plantel = {
+      id: id === null || id === undefined ? "" : String(id),
+      name: String(name || label || id || "Plantel"),
+      label: String(label || name || id || "Plantel")
+    };
+    plantel.key = getPlantelKey(plantel);
+    return plantel;
+  }
+
+  const name = fallbackName || value || "";
+  if (!fallbackId && !name) {
+    return null;
+  }
+  const plantel = {
+    id: fallbackId === null || fallbackId === undefined ? "" : String(fallbackId),
+    name: String(name || fallbackId || "Plantel"),
+    label: String(name || fallbackId || "Plantel")
+  };
+  plantel.key = getPlantelKey(plantel);
+  return plantel;
+}
+
+function getPlantelKey(plantel) {
+  if (!plantel) {
+    return "";
+  }
+  if (plantel.key) {
+    return String(plantel.key);
+  }
+  if (plantel.id) {
+    return `id:${String(plantel.id)}`;
+  }
+  const name = plantel.name || plantel.label || "";
+  return name ? `name:${slugifyPlantel(name)}` : "";
+}
+
+function slugifyPlantel(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function getBirthdayPlantel(person) {
+  const normalized = normalizeBirthdayRecord(person);
+  return normalized.plantelFisico || normalized.plantelOriginal || (normalized.plantelName ? normalizePlantelEntity(null, normalized.plantelId || "", normalized.plantelName) : null);
+}
+
+function listUniquePlanteles(birthdays) {
+  const map = new Map();
+  for (const person of birthdays || []) {
+    const plantel = getBirthdayPlantel(person);
+    if (plantel?.key && !map.has(plantel.key)) {
+      map.set(plantel.key, plantel);
+    }
+  }
+  return [...map.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), "es"));
+}
+
+function mergePlantelLists(...lists) {
+  const map = new Map();
+  for (const list of lists) {
+    for (const plantel of list || []) {
+      const normalized = normalizePlantelEntity(plantel, plantel?.id || "", plantel?.name || "");
+      if (normalized?.key && !map.has(normalized.key)) {
+        map.set(normalized.key, normalized);
+      }
+    }
+  }
+  return [...map.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), "es"));
+}
+
+const BIRTHDAY_PLANTEL_PREF_KEY = "eei:birthday:planteles:v1";
+const BIRTHDAY_PLANTEL_KNOWN_KEY = "eei:birthday:known-planteles:v1";
+const BIRTHDAY_PLANTEL_PREF_COOKIE = "eei_bday_planteles";
+const BIRTHDAY_PLANTEL_KNOWN_COOKIE = "eei_bday_known_planteles";
+
+function readBirthdayPlantelPreference() {
+  return readJsonStorage(BIRTHDAY_PLANTEL_PREF_KEY, BIRTHDAY_PLANTEL_PREF_COOKIE, { mode: "all", selected: [] });
+}
+
+function writeBirthdayPlantelPreference(value) {
+  writeJsonStorage(BIRTHDAY_PLANTEL_PREF_KEY, BIRTHDAY_PLANTEL_PREF_COOKIE, value);
+}
+
+function readKnownBirthdayPlanteles() {
+  const value = readJsonStorage(BIRTHDAY_PLANTEL_KNOWN_KEY, BIRTHDAY_PLANTEL_KNOWN_COOKIE, []);
+  return Array.isArray(value) ? value : [];
+}
+
+function writeKnownBirthdayPlanteles(value) {
+  writeJsonStorage(BIRTHDAY_PLANTEL_KNOWN_KEY, BIRTHDAY_PLANTEL_KNOWN_COOKIE, value);
+}
+
+function readJsonStorage(localKey, cookieName, fallback) {
+  const cookieValue = readCookie(cookieName);
+  const localValue = safeLocalStorageGet(localKey);
+  for (const raw of [cookieValue, localValue]) {
+    if (!raw) {
+      continue;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      // Try the next storage source.
+    }
+  }
+  return fallback;
+}
+
+function writeJsonStorage(localKey, cookieName, value) {
+  const serialized = JSON.stringify(value);
+  safeLocalStorageSet(localKey, serialized);
+  writeCookie(cookieName, serialized);
+}
+
+function readCookie(name) {
+  try {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : "";
+  } catch {
+    return "";
+  }
+}
+
+function writeCookie(name, value) {
+  try {
+    const encoded = encodeURIComponent(value);
+    const domain = getCookieDomainForBirthdayPreference();
+    document.cookie = `${name}=${encoded}; Path=/; Max-Age=31536000; SameSite=Lax${domain ? `; Domain=${domain}` : ""}`;
+  } catch {
+    // Cookie writes can fail on restricted origins; localStorage still keeps current-origin preferences.
+  }
+}
+
+function getCookieDomainForBirthdayPreference() {
+  const hostname = window.location.hostname.toLowerCase();
+  if (hostname === "casitaapps.com" || hostname.endsWith(".casitaapps.com")) {
+    return ".casitaapps.com";
+  }
+  if (hostname === "casitaiedis.edu.mx" || hostname.endsWith(".casitaiedis.edu.mx")) {
+    return ".casitaiedis.edu.mx";
+  }
+  return "";
+}
+
 function teamFlag(value) {
   const normalized = String(value || "").trim().toLowerCase();
   const code = normalized.replace(/[^a-z]/g, "").toUpperCase();
@@ -2123,6 +2433,174 @@ function overlayCss() {
     .eei-toast li strong {
       font-size: 13px;
       color: #0f172a;
+    }
+
+    .eei-birthday-plantel-card {
+      position: absolute;
+      right: max(14px, env(safe-area-inset-right));
+      bottom: max(132px, calc(env(safe-area-inset-bottom) + 132px));
+      width: min(360px, calc(100vw - 28px));
+      display: grid;
+      grid-template-columns: 66px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px 10px 9px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
+      -webkit-backdrop-filter: blur(18px);
+      backdrop-filter: blur(18px);
+      color: #0f172a;
+      pointer-events: auto;
+      animation: eei-toast-in 360ms cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .eei-birthday-plantel-card img {
+      width: 66px;
+      height: 66px;
+      object-fit: contain;
+    }
+
+    .eei-birthday-plantel-card p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.25;
+      color: rgba(15, 23, 42, 0.72);
+      font-weight: 700;
+    }
+
+    .eei-birthday-plantel-card strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 13px;
+      line-height: 1.25;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .eei-birthday-plantel-card button,
+    .eei-birthday-plantel-actions button,
+    .eei-modal-close {
+      font: inherit;
+    }
+
+    .eei-birthday-plantel-card button {
+      margin-top: 8px;
+      min-height: 30px;
+      border: 0;
+      border-radius: 999px;
+      padding: 0 12px;
+      background: #0f172a;
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .eei-birthday-plantel-modal {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: end center;
+      padding: 18px;
+      background: rgba(15, 23, 42, 0.16);
+      pointer-events: auto;
+    }
+
+    .eei-birthday-plantel-dialog {
+      position: relative;
+      width: min(420px, calc(100vw - 28px));
+      max-height: min(560px, calc(100vh - 36px));
+      overflow: auto;
+      padding: 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28);
+      color: #0f172a;
+      -webkit-backdrop-filter: blur(22px);
+      backdrop-filter: blur(22px);
+    }
+
+    .eei-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.08);
+      color: #0f172a;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .eei-birthday-plantel-dialog h2 {
+      margin: 0 36px 6px 0;
+      font-size: 20px;
+      line-height: 1.15;
+      color: #0f172a;
+    }
+
+    .eei-birthday-plantel-dialog p {
+      margin: 0 0 14px;
+      font-size: 13px;
+      line-height: 1.4;
+      color: rgba(15, 23, 42, 0.7);
+    }
+
+    .eei-birthday-plantel-list {
+      display: grid;
+      gap: 8px;
+      margin: 0 0 16px;
+    }
+
+    .eei-birthday-plantel-list label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 11px;
+      border-radius: 9px;
+      background: rgba(15, 23, 42, 0.055);
+      font-size: 14px;
+      line-height: 1.25;
+      color: #0f172a;
+      cursor: pointer;
+    }
+
+    .eei-birthday-plantel-list input {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .eei-birthday-plantel-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .eei-birthday-plantel-actions button {
+      min-height: 34px;
+      border: 0;
+      border-radius: 999px;
+      padding: 0 14px;
+      background: rgba(15, 23, 42, 0.08);
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .eei-birthday-plantel-actions [data-action="save"] {
+      background: #0f172a;
+      color: white;
     }
 
     .eei-worldcup {

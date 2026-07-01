@@ -1,5 +1,5 @@
 {
-  "version": 8,
+  "version": 12,
   "enabled": true,
   "assetsBaseUrl": "auto",
   "performance": {
@@ -20,6 +20,7 @@
     "timezone": "America/Mexico_City",
     "showOncePerDay": true,
     "toastDurationMs": 9500,
+    "subscriptionPrompt": true,
     "mockBirthdays": []
   },
   "festivities": {

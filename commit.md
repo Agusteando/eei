@@ -1,17 +1,9 @@
-# Commit sugerido
+fix: add birthday plantel subscriptions without Signia fallback
 
-```bash
-git add .
-git commit -m "Refina debug de APIs y anuncios EEI"
-git push
-```
-
-Validar después de deploy:
-
-- Abrir `/eei-admin.html?v=2026-07-01-v8`.
-- Usar Debug APIs → Ver API cumpleaños.
-- Usar Debug APIs → Ver API Mundial.
-- Confirmar que las respuestas muestran `payload`, status HTTP y endpoint.
-- Confirmar que Año Nuevo no muestra toast.
-- Confirmar que cumpleaños muestra anuncios individuales.
-```
+- keep Signia upstream on /api/export/employees/today-birthdays
+- do not call heavy /api/export/employees fallback from EEI
+- normalize Signia birthday records with colaborador and plantel metadata
+- filter birthday effects by subscribed planteles
+- add user-facing ambassador prompt and plantel selection modal
+- store birthday plantel preference in localStorage and parent-domain cookie
+- bump EEI to v12 / engine 0.12.0
