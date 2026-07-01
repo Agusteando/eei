@@ -1,1 +1,1 @@
-Rediseña el panel admin de EEI para operación móvil y mantenimiento exprés
+Rediseña EEI Admin como Command Center mobile-first para mantenimiento de emergencia

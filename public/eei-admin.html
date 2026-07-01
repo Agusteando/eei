@@ -3,31 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>EEI Admin</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230e766e'/%3E%3Cpath d='M16 18h32v7H25v7h19v7H25v7h24v7H16z' fill='%23fff7ed'/%3E%3C/svg%3E">
+  <title>EEI Command Center</title>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f7f4ee;
-      --bg-accent: #edf7f2;
-      --card: rgba(255, 255, 255, 0.88);
-      --card-strong: #ffffff;
-      --ink: #14211f;
-      --muted: #667570;
-      --line: rgba(20, 33, 31, 0.1);
-      --line-strong: rgba(20, 33, 31, 0.18);
-      --teal: #0f766e;
-      --teal-2: #0b4f49;
-      --mint: #def4ec;
-      --mint-2: #f1fbf7;
-      --danger: #de5f4d;
-      --danger-2: #fff1ee;
-      --gold: #ab7825;
-      --gold-2: #fff7e6;
-      --shadow: 0 26px 80px rgba(15, 45, 40, 0.14);
-      --radius: 24px;
-      --radius-sm: 18px;
-      --radius-xs: 14px;
+      --bg: #f4f1ea;
+      --ink: #111c1a;
+      --muted: #66726f;
+      --line: rgba(17, 28, 26, .1);
+      --card: rgba(255, 255, 255, .82);
+      --solid: #fff;
+      --teal: #0d766f;
+      --teal-2: #084d48;
+      --mint: #def5ed;
+      --amber: #a56c13;
+      --amber-bg: #fff3d8;
+      --red: #c9473d;
+      --red-bg: #fff0ee;
+      --shadow: 0 24px 80px rgba(8, 40, 36, .14);
+      --radius: 28px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -37,12 +31,11 @@
       margin: 0;
       color: var(--ink);
       background:
-        radial-gradient(circle at 0% 0%, rgba(15,118,110,0.16), transparent 32vw),
-        radial-gradient(circle at 100% 12%, rgba(171,120,37,0.12), transparent 28vw),
-        linear-gradient(180deg, var(--bg), var(--bg-accent));
-      letter-spacing: -0.01em;
+        radial-gradient(circle at 0 0, rgba(13, 118, 111, .18), transparent 34vw),
+        radial-gradient(circle at 100% 10%, rgba(165, 108, 19, .12), transparent 30vw),
+        linear-gradient(180deg, #f9f7f1, #edf7f2 72%, #e7f0eb);
+      letter-spacing: -.01em;
     }
-
     button, input, textarea, select { font: inherit; }
     button { border: 0; cursor: pointer; }
     input, textarea, select { color: var(--ink); }
@@ -50,856 +43,225 @@
     .app {
       width: min(100%, 1180px);
       margin: 0 auto;
-      padding: max(18px, env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom));
+      padding: max(14px, env(safe-area-inset-top)) 14px calc(100px + env(safe-area-inset-bottom));
     }
 
-    .hero {
-      display: grid;
-      gap: 18px;
-      margin-bottom: 16px;
-    }
-
-    .hero-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 14px;
-    }
-
-    .brand {
-      display: flex;
-      gap: 14px;
-      min-width: 0;
-    }
-
-    .mark {
-      width: 48px;
-      height: 48px;
-      border-radius: 16px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--teal), var(--teal-2));
-      color: #fff;
-      font-weight: 950;
-      box-shadow: 0 14px 34px rgba(15, 118, 110, 0.24);
-      flex: 0 0 auto;
-    }
-
-    h1,h2,h3,p { margin: 0; }
-
-    .eyebrow {
-      margin-bottom: 3px;
-      color: var(--teal);
-      text-transform: uppercase;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      font-weight: 900;
-    }
-
-    h1 {
-      font-size: clamp(28px, 7.4vw, 46px);
-      line-height: 0.95;
-      letter-spacing: -0.055em;
-    }
-
-    .hero-copy {
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
       display: grid;
       gap: 10px;
-      max-width: 760px;
+      padding: 10px 0 14px;
+      background: linear-gradient(180deg, rgba(249,247,241,.94), rgba(249,247,241,.74) 80%, transparent);
+      backdrop-filter: blur(16px);
     }
+    .toprow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .mark { width: 42px; height: 42px; border-radius: 15px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--teal), var(--teal-2)); font-weight: 950; box-shadow: 0 14px 28px rgba(13,118,111,.24); }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 23px; line-height: 1; letter-spacing: -.05em; }
+    .sub { color: var(--muted); font-size: 12px; font-weight: 750; margin-top: 3px; }
 
-    .hint {
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: 14px;
-    }
+    .status-line { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+    .chip, .mini-chip { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.75); color: var(--muted); font-weight: 900; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chip.ok, .mini-chip.ok { color: var(--teal-2); background: var(--mint); border-color: rgba(13,118,111,.18); }
+    .chip.warn, .mini-chip.warn { color: var(--amber); background: var(--amber-bg); border-color: rgba(165,108,19,.22); }
+    .chip.bad, .mini-chip.bad { color: var(--red); background: var(--red-bg); border-color: rgba(201,71,61,.2); }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: currentColor; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent); flex: 0 0 auto; }
 
-    .status {
-      min-height: 38px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.78);
-      border: 1px solid rgba(15,118,110,0.18);
-      color: var(--teal-2);
-      font-size: 12px;
-      font-weight: 900;
-      white-space: nowrap;
-      box-shadow: 0 10px 26px rgba(20,33,31,0.08);
-    }
+    .layout { display: grid; gap: 14px; }
+    .stack { display: grid; gap: 14px; }
+    .card { border: 1px solid var(--line); background: var(--card); backdrop-filter: blur(20px); box-shadow: var(--shadow); border-radius: var(--radius); overflow: hidden; }
+    .card-head { padding: 18px 18px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .card-head h2 { font-size: 18px; line-height: 1; letter-spacing: -.04em; }
+    .body { padding: 16px 18px 18px; display: grid; gap: 12px; }
 
-    .status .dot,
-    .pill .dot,
-    .mini-state .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: currentColor;
-      box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent);
-      flex: 0 0 auto;
-    }
+    .hero-title { font-size: 28px; letter-spacing: -.055em; line-height: .95; }
+    .preset-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .preset { min-height: 86px; border-radius: 22px; padding: 14px; display: grid; align-content: center; text-align: left; gap: 5px; background: rgba(255,255,255,.88); border: 1px solid var(--line); color: var(--ink); box-shadow: 0 12px 30px rgba(8,40,36,.06); }
+    .preset strong { font-size: 19px; line-height: 1; letter-spacing: -.04em; }
+    .preset span { color: var(--muted); font-size: 12px; font-weight: 800; }
+    .preset.primary { background: linear-gradient(135deg, var(--teal), var(--teal-2)); color: #fff; }
+    .preset.primary span { color: rgba(255,255,255,.78); }
+    .preset.active { outline: 3px solid rgba(13,118,111,.22); }
 
-    .status.warn { color: var(--danger); border-color: rgba(222,95,77,0.25); background: var(--danger-2); }
-    .status.loading { color: var(--gold); border-color: rgba(171,120,37,0.24); background: var(--gold-2); }
+    .field { display: grid; gap: 8px; }
+    .label { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 950; color: #33433f; }
+    input, textarea, select { width: 100%; border: 1px solid rgba(17,28,26,.14); border-radius: 18px; background: rgba(255,255,255,.94); padding: 13px 14px; outline: none; font-weight: 800; box-shadow: inset 0 1px 0 rgba(255,255,255,.9); }
+    textarea { resize: vertical; min-height: 92px; line-height: 1.35; }
+    input:focus, textarea:focus, select:focus { border-color: rgba(13,118,111,.45); box-shadow: 0 0 0 4px rgba(13,118,111,.12); }
 
-    .hero-stats {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
+    .preview-card { display: grid; gap: 12px; border-radius: 24px; padding: 16px; background: linear-gradient(145deg, rgba(255,255,255,.95), rgba(255,255,255,.72)); border: 1px solid rgba(17,28,26,.1); }
+    .notice { border-radius: 22px; padding: 16px; background: #10231f; color: #fff; box-shadow: 0 18px 40px rgba(16,35,31,.20); display: grid; gap: 8px; }
+    .notice .eyebrow { color: #80e1d0; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 950; }
+    .notice strong { font-size: 18px; line-height: 1; letter-spacing: -.03em; }
+    .notice span { font-size: 13px; color: rgba(255,255,255,.78); line-height: 1.35; }
+    .notice time { justify-self: start; padding: 8px 10px; border-radius: 999px; background: rgba(255,255,255,.12); font-size: 12px; font-weight: 900; color: #fff; }
 
-    .hero-stat,
-    .quick-preset,
-    .mini-card,
-    .stage-card,
-    .module,
-    .field-box,
-    .detail-box,
-    .surface {
-      border: 1px solid var(--line);
-      background: var(--card);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-    }
+    .actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+    .btn { min-height: 48px; border-radius: 18px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--teal-2); color: #fff; font-weight: 950; box-shadow: 0 16px 34px rgba(8,77,72,.22); }
+    .btn.secondary { background: rgba(255,255,255,.92); color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
+    .btn.ghost { background: transparent; color: var(--teal-2); border: 1px solid rgba(13,118,111,.2); box-shadow: none; }
+    .btn.danger { background: var(--red); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
 
-    .hero-stat {
-      border-radius: 18px;
-      padding: 14px;
-      display: grid;
-      gap: 4px;
-    }
+    .health-list, .module-list, .host-list { display: grid; gap: 8px; }
+    .row { min-height: 58px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 19px; background: rgba(255,255,255,.72); padding: 12px; }
+    .row strong { display: block; font-size: 15px; letter-spacing: -.02em; }
+    .row span { display: block; color: var(--muted); font-size: 12px; font-weight: 750; margin-top: 2px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .hero-stat span,
-    .mini-card span,
-    .stage-card span,
-    .field-help,
-    .detail-help,
-    .debug-caption {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.35;
-    }
-
-    .hero-stat strong,
-    .mini-card strong,
-    .stage-card strong {
-      font-size: 16px;
-      line-height: 1.1;
-      letter-spacing: -0.03em;
-    }
-
-    .layout {
-      display: grid;
-      gap: 16px;
-    }
-
-    .surface {
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    .surface-head {
-      padding: 18px 18px 12px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 14px;
-    }
-
-    .surface-head h2 {
-      font-size: 18px;
-      line-height: 1.1;
-      letter-spacing: -0.03em;
-    }
-
-    .surface-body {
-      padding: 16px 18px 18px;
-      display: grid;
-      gap: 14px;
-    }
-
-    .pill {
-      min-height: 28px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border-radius: 999px;
-      padding: 0 12px;
-      background: #eef0ef;
-      color: #6d7773;
-      font-size: 11px;
-      font-weight: 900;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .pill.on { background: var(--mint); color: var(--teal-2); }
-    .pill.warn { background: var(--gold-2); color: var(--gold); }
-
-    .switch-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 16px 18px;
-      border-radius: 22px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.74));
-      border: 1px solid var(--line);
-    }
-
-    .switch-copy strong {
-      display: block;
-      font-size: 22px;
-      line-height: 1;
-      letter-spacing: -0.04em;
-    }
-
-    .switch-copy span { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.4; }
-
-    .switch {
-      position: relative;
-      width: 64px;
-      height: 38px;
-      flex: 0 0 auto;
-    }
-
+    .switch { position: relative; width: 58px; height: 34px; flex: 0 0 auto; }
     .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute;
-      inset: 0;
-      border-radius: 999px;
-      background: #cad3d0;
-      transition: 180ms ease;
-    }
-    .slider::after {
-      content: "";
-      position: absolute;
-      top: 4px;
-      left: 4px;
-      width: 30px;
-      height: 30px;
-      border-radius: 999px;
-      background: #fff;
-      box-shadow: 0 7px 18px rgba(20,33,31,0.2);
-      transition: 180ms ease;
-    }
+    .slider { position: absolute; inset: 0; border-radius: 999px; background: #c9d2cf; transition: 160ms ease; }
+    .slider::after { content: ""; position: absolute; width: 26px; height: 26px; left: 4px; top: 4px; border-radius: 999px; background: #fff; box-shadow: 0 6px 16px rgba(17,28,26,.22); transition: 160ms ease; }
     .switch input:checked + .slider { background: var(--teal); }
-    .switch input:checked + .slider::after { transform: translateX(26px); }
+    .switch input:checked + .slider::after { transform: translateX(24px); }
 
-    .actions,
-    .chips,
-    .stack,
-    .grid,
-    .stats-grid,
-    .module-list,
-    .preview-grid,
-    .debug-grid {
-      display: grid;
-      gap: 10px;
-    }
+    .savebar { position: fixed; z-index: 30; inset: auto 0 0; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: rgba(244,241,234,.82); backdrop-filter: blur(18px); border-top: 1px solid var(--line); }
+    .savebar-inner { width: min(100%, 1180px); margin: 0 auto; display: grid; grid-template-columns: .8fr 1.2fr; gap: 10px; }
 
-    .actions.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .actions.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    dialog { width: min(94vw, 560px); border: 0; border-radius: 28px; padding: 0; background: var(--solid); color: var(--ink); box-shadow: 0 28px 100px rgba(8,40,36,.28); }
+    dialog::backdrop { background: rgba(8,20,18,.42); backdrop-filter: blur(6px); }
+    .sheet-head { padding: 18px 18px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .sheet-head h3 { font-size: 22px; letter-spacing: -.05em; }
+    .sheet-body { padding: 16px 18px 18px; display: grid; gap: 12px; }
+    .seg { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    .seg button { min-height: 44px; border-radius: 16px; background: rgba(17,28,26,.05); color: var(--ink); font-weight: 950; }
+    .seg button.active { background: var(--mint); color: var(--teal-2); }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .raw { margin: 0; max-height: 54vh; overflow: auto; border-radius: 18px; background: #10231f; color: #dff8f1; padding: 14px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+    .host-chip { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; border-radius: 16px; padding: 9px 11px; background: rgba(17,28,26,.05); font-weight: 850; }
+    .host-chip button { width: 28px; height: 28px; border-radius: 999px; background: rgba(201,71,61,.12); color: var(--red); font-weight: 950; }
 
-    .btn {
-      min-height: 48px;
-      border-radius: 16px;
-      padding: 0 16px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: var(--teal-2);
-      color: #fff;
-      font-weight: 900;
-      box-shadow: 0 14px 28px rgba(15,79,73,0.2);
-      text-decoration: none;
-      touch-action: manipulation;
-    }
-
-    .btn.secondary {
-      background: rgba(255,255,255,0.96);
-      color: var(--ink);
-      border: 1px solid var(--line);
-      box-shadow: none;
-    }
-
-    .btn.ghost {
-      background: transparent;
-      color: var(--teal-2);
-      border: 1px solid rgba(15,118,110,0.18);
-      box-shadow: none;
-    }
-
-    .btn.danger { background: var(--danger); }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    .quick-preset {
-      border-radius: 18px;
-      padding: 14px;
-      display: grid;
-      gap: 6px;
-      text-align: left;
-      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.8));
-    }
-
-    .quick-preset strong {
-      font-size: 16px;
-      line-height: 1.05;
-      letter-spacing: -0.03em;
-    }
-
-    .quick-preset span { font-size: 12px; color: var(--muted); line-height: 1.35; }
-    .quick-preset.active { outline: 2px solid rgba(15,118,110,0.22); }
-
-    .field-grid {
-      display: grid;
-      gap: 12px;
-    }
-
-    .field-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-    .field-box {
-      border-radius: 18px;
-      padding: 14px;
-      display: grid;
-      gap: 8px;
-    }
-
-    label.field {
-      display: grid;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 900;
-      color: #334642;
-    }
-
-    .field input,
-    .field select,
-    textarea,
-    .field textarea {
-      width: 100%;
-      border: 1px solid var(--line-strong);
-      border-radius: 16px;
-      background: rgba(255,255,255,0.96);
-      padding: 12px 13px;
-      outline: none;
-      font-weight: 700;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
-    }
-
-    textarea {
-      min-height: 130px;
-      resize: vertical;
-      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      letter-spacing: 0;
-    }
-
-    .field textarea.compact { min-height: 88px; }
-
-    .field input:focus,
-    .field select:focus,
-    textarea:focus,
-    .field textarea:focus {
-      border-color: rgba(15,118,110,0.44);
-      box-shadow: 0 0 0 4px rgba(15,118,110,0.12);
-    }
-
-    .inline {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .checkline {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    .checkline input { width: 16px; height: 16px; accent-color: var(--teal); }
-
-    .token-row { display: grid; gap: 12px; }
-
-    .module-list {
-      gap: 12px;
-    }
-
-    .module {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 12px;
-      align-items: center;
-      border-radius: 18px;
-      padding: 14px;
-    }
-
-    .module-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      background: var(--mint-2);
-      font-weight: 900;
-      color: var(--teal-2);
-      border: 1px solid rgba(15,118,110,0.08);
-    }
-
-    .module strong { display: block; font-size: 15px; letter-spacing: -0.02em; }
-    .module span { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); line-height: 1.35; }
-
-    .preview-shell {
-      position: relative;
-      min-height: 340px;
-      border-radius: 24px;
-      overflow: hidden;
-      border: 1px solid var(--line);
-      background:
-        linear-gradient(145deg, rgba(255,255,255,0.88), rgba(255,255,255,0.56)),
-        radial-gradient(circle at 100% 0%, rgba(15,118,110,0.08), transparent 32%),
-        repeating-linear-gradient(90deg, rgba(20,33,31,0.04) 0, rgba(20,33,31,0.04) 1px, transparent 1px, transparent 52px),
-        #f7f8f4;
-      padding: 16px;
-      display: grid;
-      gap: 12px;
-      align-content: start;
-    }
-
-    .preview-banner {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      border-radius: 18px;
-      padding: 14px;
-      background: rgba(255,255,255,0.86);
-      border: 1px solid var(--line);
-    }
-
-    .preview-banner strong {
-      display: block;
-      font-size: 18px;
-      letter-spacing: -0.03em;
-      line-height: 1.08;
-    }
-
-    .preview-banner span {
-      display: block;
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.35;
-    }
-
-    .mini-state {
-      min-height: 30px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0 12px;
-      border-radius: 999px;
-      background: var(--mint);
-      color: var(--teal-2);
-      font-size: 11px;
-      font-weight: 900;
-      text-transform: uppercase;
-      white-space: nowrap;
-      flex: 0 0 auto;
-    }
-
-    .preview-grid,
-    .debug-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .mini-card,
-    .stage-card,
-    .detail-box {
-      border-radius: 18px;
-      padding: 14px;
-    }
-
-    .mini-card em,
-    .stage-card em {
-      font-style: normal;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .debug-output {
-      margin: 0;
-      min-height: 220px;
-      max-height: 380px;
-      overflow: auto;
-      border-radius: 18px;
-      padding: 14px;
-      background: #12201f;
-      color: #d9f5ee;
-      border: 1px solid rgba(15,118,110,0.16);
-      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    details {
-      border-top: 1px solid var(--line);
-    }
-
-    summary {
-      list-style: none;
-      cursor: pointer;
-      padding: 16px 18px;
-      font-weight: 900;
-      font-size: 14px;
-    }
+    details { border-top: 1px solid var(--line); }
+    summary { list-style: none; cursor: pointer; padding: 16px 18px; font-size: 14px; font-weight: 950; }
     summary::-webkit-details-marker { display: none; }
     summary::after { content: "▾"; float: right; color: var(--muted); }
     details[open] summary::after { content: "▴"; }
-
-    .savebar {
-      position: fixed;
-      z-index: 40;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-      background: rgba(247,244,238,0.84);
-      backdrop-filter: blur(20px);
-      border-top: 1px solid var(--line);
-    }
-
-    .savebar-inner {
-      width: min(100%, 1180px);
-      margin: 0 auto;
-      display: grid;
-      gap: 10px;
-    }
-
-    .desktop-inline { display: none; }
+    .advanced-grid { display: grid; gap: 10px; }
+    .json-editor { min-height: 300px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
     @media (min-width: 760px) {
       .app { padding-inline: 24px; }
-      .layout { grid-template-columns: 0.95fr 1.05fr; align-items: start; }
-      .hero { margin-bottom: 18px; }
-      .hero-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .chips { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .stats-grid, .field-grid.two, .actions.two, .actions.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .preview-grid, .debug-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .savebar-inner { grid-template-columns: 220px 1fr; }
-      .desktop-inline { display: inline-flex; }
+      .layout { grid-template-columns: .95fr 1.05fr; align-items: start; }
+      .preset-grid { grid-template-columns: repeat(5,minmax(0,1fr)); }
+      .preset { min-height: 96px; }
+      .actions.triple { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .advanced-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
     }
-
-    @media (min-width: 980px) {
-      .actions.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .field-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
     @media (max-width: 520px) {
-      .hero-bar { align-items: flex-start; }
-      .module { grid-template-columns: 1fr auto; }
-      .module-icon { display: none; }
-      .preview-grid, .debug-grid, .hero-stats, .stats-grid, .field-grid.two, .actions.two, .actions.three, .chips { grid-template-columns: 1fr; }
-      .status { max-width: 48vw; overflow: hidden; text-overflow: ellipsis; }
+      .status-line { grid-template-columns: 1fr 1fr; }
+      .status-line .chip:last-child { grid-column: 1 / -1; }
+      .savebar-inner { grid-template-columns: 1fr; }
+      .two { grid-template-columns: 1fr; }
+      .preset-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .preset:first-child { grid-column: 1 / -1; }
+      .actions { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main class="app">
-    <section class="hero">
-      <div class="hero-bar">
-        <div class="hero-copy">
-          <div class="brand">
-            <div class="mark">EEI</div>
-            <div>
-              <div class="eyebrow">Centro de control móvil</div>
-              <h1>Opera EEI sin fricción</h1>
-            </div>
-          </div>
-          <p class="hint">Rehice esta pantalla para el caso real de uso: emergencias. Aquí debes poder activar un aviso de mantenimiento en segundos, verificar APIs y guardar sin navegar un laberinto.</p>
+    <header class="topbar">
+      <div class="toprow">
+        <div class="brand">
+          <div class="mark">EEI</div>
+          <div><h1>Command Center</h1><div class="sub" id="lastSaved">—</div></div>
         </div>
-        <div class="status loading" id="saveStatus"><span class="dot"></span><span>Cargando</span></div>
+        <button class="btn secondary" type="button" id="openTokenBtn">Key</button>
       </div>
-      <div class="hero-stats">
-        <div class="hero-stat"><span>Estado global</span><strong id="heroGlobalState">Cargando</strong></div>
-        <div class="hero-stat"><span>Mantenimiento</span><strong id="heroMaintenanceState">Sin definir</strong></div>
-        <div class="hero-stat"><span>Módulos activos</span><strong id="heroModuleCount">0 activos</strong></div>
-        <div class="hero-stat"><span>Guardado</span><strong id="heroDirtyState">Sin cambios</strong></div>
+      <div class="status-line">
+        <div class="chip ok" id="globalChip"><span class="dot"></span><span>LIVE</span></div>
+        <div class="chip" id="dirtyChip"><span>Sin cambios</span></div>
+        <div class="chip warn" id="quotaChip"><span>CF manual</span></div>
       </div>
-    </section>
+    </header>
 
     <section class="layout">
       <div class="stack">
-        <section class="surface">
-          <div class="surface-head">
-            <div>
-              <h2>Acceso admin</h2>
-              <p class="detail-help">Guarda la llave una sola vez en este navegador.</p>
+        <section class="card">
+          <div class="card-head"><h2 class="hero-title">🚨 Mantenimiento</h2><span class="mini-chip" id="maintChip">OFF</span></div>
+          <div class="body">
+            <div class="preset-grid">
+              <button class="preset primary" type="button" data-preset="now"><strong>Ahora</strong><span>Inmediato</span></button>
+              <button class="preset" type="button" data-preset="5"><strong>5 min</strong><span>Urgente</span></button>
+              <button class="preset" type="button" data-preset="15"><strong>15 min</strong><span>Aviso corto</span></button>
+              <button class="preset" type="button" data-preset="30"><strong>30 min</strong><span>Programado</span></button>
+              <button class="preset" type="button" id="openScheduleBtn"><strong>Programar</strong><span>Fecha/hora</span></button>
             </div>
-            <span class="pill" id="tokenPill">Sin llave</span>
-          </div>
-          <div class="surface-body token-row">
-            <label class="field">Admin key
-              <input type="password" id="adminToken" autocomplete="off" placeholder="Pega EEI_ADMIN_TOKEN">
-            </label>
-            <label class="checkline"><input type="checkbox" id="rememberToken"> Recordar en este dispositivo</label>
-            <div class="actions two">
-              <button class="btn secondary" type="button" id="saveTokenBtn">Guardar llave</button>
-              <button class="btn ghost" type="button" id="forgetTokenBtn">Olvidar</button>
+            <div class="field">
+              <div class="label"><span>Mensaje</span><span id="messageCount">0</span></div>
+              <textarea id="maintenanceMessage" rows="3" maxlength="160"></textarea>
             </div>
-          </div>
-        </section>
-
-        <section class="surface">
-          <div class="surface-body">
-            <div class="switch-row">
-              <div class="switch-copy">
-                <strong>EEI global</strong>
-                <span>Si lo apagas, ningún efecto ni campaña se inyecta aunque la ruta exista.</span>
-              </div>
-              <label class="switch"><input type="checkbox" data-bind="enabled"><span class="slider"></span></label>
-            </div>
-            <div class="stats-grid">
-              <div class="mini-card"><span>Hosts bloqueados</span><strong id="blockedCount">0</strong></div>
-              <div class="mini-card"><span>APIs debug</span><strong id="apiHealthSummary">Sin probar</strong></div>
+            <div class="actions triple">
+              <button class="btn secondary" type="button" id="previewMaintenanceBtn">Preview</button>
+              <button class="btn" type="button" id="activateMaintenanceBtn">Activar</button>
+              <button class="btn danger" type="button" id="disableMaintenanceBtn">Apagar</button>
             </div>
           </div>
         </section>
 
-        <section class="surface">
-          <div class="surface-head">
-            <div>
-              <h2>Módulos</h2>
-              <p class="detail-help">Prende sólo lo útil. Todo lo demás sobra.</p>
-            </div>
-            <span class="pill" id="activePill">0 activos</span>
-          </div>
-          <div class="surface-body module-list">
-            <div class="module">
-              <div class="module-icon">ISV</div>
-              <div><strong>Sistemas vivos</strong><span>Banner desde isv-ev2.pages.dev.</span></div>
-              <label class="switch"><input type="checkbox" data-bind="campaigns.isv.enabled"><span class="slider"></span></label>
-            </div>
-            <div class="module">
-              <div class="module-icon">⚙</div>
-              <div><strong>Mantenimiento</strong><span>Aviso con cuenta regresiva o ventana activa.</span></div>
-              <label class="switch"><input type="checkbox" data-bind="maintenance.enabled"><span class="slider"></span></label>
-            </div>
-            <div class="module">
-              <div class="module-icon">🎂</div>
-              <div><strong>Cumpleaños</strong><span>Usa sólo cumpleaños reales que venga de Signia.</span></div>
-              <label class="switch"><input type="checkbox" data-bind="birthday.enabled"><span class="slider"></span></label>
-            </div>
-            <div class="module">
-              <div class="module-icon">⚽</div>
-              <div><strong>Mundial</strong><span>Pin compacto y balones físicos.</span></div>
-              <label class="switch"><input type="checkbox" data-bind="festivities.mundial_2026.enabled"><span class="slider"></span></label>
-            </div>
-            <div class="module">
-              <div class="module-icon">❄</div>
-              <div><strong>Navidad</strong><span>Efecto estacional temporal.</span></div>
-              <label class="switch"><input type="checkbox" data-bind="festivities.christmas.enabled"><span class="slider"></span></label>
-            </div>
-            <div class="module">
-              <div class="module-icon">✦</div>
-              <div><strong>Año nuevo</strong><span>Fuegos artificiales con duración limitada.</span></div>
-              <label class="switch"><input type="checkbox" data-bind="festivities.new_year.enabled"><span class="slider"></span></label>
+        <section class="card">
+          <div class="card-head"><h2>Salud</h2><span class="mini-chip" id="healthChip">—</span></div>
+          <div class="body health-list">
+            <div class="row"><div><strong>Cumpleaños</strong><span id="birthdayEndpoint">Signia</span></div><button class="mini-chip" id="birthdayStatus">Probar</button></div>
+            <div class="row"><div><strong>Mundial</strong><span id="mundialEndpoint">Football</span></div><button class="mini-chip" id="mundialStatus">Probar</button></div>
+            <div class="actions">
+              <button class="btn secondary" type="button" id="debugBirthdayBtn">Cumples</button>
+              <button class="btn secondary" type="button" id="debugMundialBtn">Mundial</button>
             </div>
           </div>
         </section>
 
-        <section class="surface">
-          <div class="surface-head">
-            <div>
-              <h2>Control por host</h2>
-              <p class="detail-help">Bloquea hosts específicos. Sin wildcards.</p>
-            </div>
-          </div>
-          <div class="surface-body">
-            <label class="field">Subdominios bloqueados
-              <textarea id="globalBlockedHostnames" class="compact" spellcheck="false" placeholder="ejemplo.casitaapps.com&#10;aurora.casitaiedis.edu.mx"></textarea>
-            </label>
-            <p class="field-help">Un host exacto por línea. Si un host aparece aquí, no recibe ni EEI ni ISV.</p>
+        <section class="card">
+          <div class="card-head"><h2>Hosts</h2><button class="mini-chip" type="button" id="openHostsBtn">Editar</button></div>
+          <div class="body">
+            <div class="row"><div><strong id="hostCount">0</strong><span>bloqueados</span></div><span class="mini-chip" id="hostMode">Exactos</span></div>
           </div>
         </section>
       </div>
 
       <div class="stack">
-        <section class="surface">
-          <div class="surface-head">
-            <div>
-              <div class="eyebrow">Emergencias primero</div>
-              <h2>Mantenimiento exprés</h2>
-              <p class="detail-help">Activa un aviso útil en segundos. Luego ajusta el detalle fino sólo si hace falta.</p>
+        <section class="card">
+          <div class="card-head"><h2>Vista</h2><span class="mini-chip ok" id="previewChip">LIVE</span></div>
+          <div class="body preview-card">
+            <div class="notice" id="maintenancePreview">
+              <div class="eyebrow" id="noticeSeverity">NORMAL</div>
+              <strong id="noticeTitle">Sin mantenimiento</strong>
+              <span id="noticeMessage">EEI listo.</span>
+              <time id="noticeTime">—</time>
             </div>
-            <span class="pill on" id="maintenanceModePill">Operación normal</span>
-          </div>
-          <div class="surface-body">
-            <div class="chips" id="maintenancePresets">
-              <button class="quick-preset" type="button" data-maintenance-minutes="5"><strong>En 5 min</strong><span>Emergencia inmediata</span></button>
-              <button class="quick-preset" type="button" data-maintenance-minutes="15"><strong>En 15 min</strong><span>Da tiempo para cerrar tareas</span></button>
-              <button class="quick-preset" type="button" data-maintenance-minutes="30"><strong>En 30 min</strong><span>Ventana breve programada</span></button>
-              <button class="quick-preset" type="button" data-maintenance-minutes="60"><strong>En 1 hora</strong><span>Aviso anticipado</span></button>
-            </div>
-            <div class="actions three">
-              <button class="btn secondary" type="button" id="maintenanceNowBtn">Iniciar ahora</button>
-              <button class="btn ghost" type="button" id="maintenanceTomorrowBtn">Mañana 6:00 AM</button>
-              <button class="btn danger" type="button" id="maintenanceDisableBtn">Desactivar aviso</button>
-            </div>
-            <div class="field-grid two">
-              <div class="field-box">
-                <label class="field">Fecha/hora de inicio
-                  <input type="datetime-local" id="maintenanceTargetLocal">
-                </label>
-                <p class="field-help" id="maintenanceTargetHelp">Selecciona cuándo debe iniciar la ventana.</p>
-              </div>
-              <div class="field-box">
-                <label class="field">Tipo de aviso
-                  <select id="maintenanceSeverity">
-                    <option value="planned">Programado</option>
-                    <option value="urgent">Urgente</option>
-                    <option value="emergency">Emergencia</option>
-                  </select>
-                </label>
-                <p class="field-help">El subtítulo que verán los usuarios en la tarjeta de mantenimiento.</p>
-              </div>
-            </div>
-            <div class="field-grid two">
-              <div class="field-box">
-                <label class="field">Título visible
-                  <input type="text" id="maintenanceTitle" placeholder="Mantenimiento programado">
-                </label>
-              </div>
-              <div class="field-box">
-                <label class="field">Mensaje visible
-                  <input type="text" id="maintenanceMessage" placeholder="La plataforma entrará en una ventana breve de servicio.">
-                </label>
-              </div>
+            <div class="actions">
+              <button class="btn secondary" type="button" id="previewBirthdayBtn">Cumple</button>
+              <button class="btn secondary" type="button" id="previewMundialBtn">Mundial</button>
             </div>
           </div>
         </section>
 
-        <section class="surface">
-          <div class="surface-head">
-            <div>
-              <div class="eyebrow">Preview</div>
-              <h2>Vista previa útil</h2>
-              <p class="detail-help">Quité los placeholders vacíos. Ahora ves un resumen entendible y botones reales de prueba.</p>
-            </div>
-            <span class="pill on" id="previewPill">Listo</span>
-          </div>
-          <div class="surface-body">
-            <div class="preview-shell" id="previewSurface">
-              <div class="preview-banner">
-                <div>
-                  <strong id="previewHeadline">Sin mantenimiento activo</strong>
-                  <span id="previewSubline">EEI listo para probar sin afectar usuarios reales.</span>
-                </div>
-                <span class="mini-state" id="previewStateBadge"><span class="dot"></span><span>Normal</span></span>
-              </div>
-              <div class="preview-grid">
-                <div class="mini-card"><span>EEI global</span><strong id="previewGlobalState">Activo</strong></div>
-                <div class="mini-card"><span>Cuenta regresiva</span><strong id="previewCountdown">—</strong></div>
-                <div class="mini-card"><span>Módulos activos</span><strong id="previewModuleCount">0</strong></div>
-                <div class="mini-card"><span>Hosts bloqueados</span><strong id="previewBlockedCount">0</strong></div>
-              </div>
-              <div class="actions three">
-                <button class="btn secondary" type="button" id="previewBirthdayBtn">Probar cumple</button>
-                <button class="btn secondary" type="button" id="previewMundialBtn">Probar mundial</button>
-                <button class="btn ghost" type="button" id="clearPreviewBtn">Limpiar preview</button>
-              </div>
-            </div>
+        <section class="card">
+          <div class="card-head"><h2>Módulos</h2><span class="mini-chip" id="moduleCount">0 ON</span></div>
+          <div class="body module-list">
+            <div class="row"><div><strong>ISV</strong><span>Sistemas vivos</span></div><label class="switch"><input type="checkbox" data-bind="campaigns.isv.enabled"><span class="slider"></span></label></div>
+            <div class="row"><div><strong>Cumples</strong><span>Signia</span></div><label class="switch"><input type="checkbox" data-bind="birthday.enabled"><span class="slider"></span></label></div>
+            <div class="row"><div><strong>Mundial</strong><span>Pin + física</span></div><label class="switch"><input type="checkbox" data-bind="festivities.mundial_2026.enabled"><span class="slider"></span></label></div>
+            <div class="row"><div><strong>Navidad</strong><span>Temporada</span></div><label class="switch"><input type="checkbox" data-bind="festivities.christmas.enabled"><span class="slider"></span></label></div>
+            <div class="row"><div><strong>Fuegos</strong><span>Duración limitada</span></div><label class="switch"><input type="checkbox" data-bind="festivities.new_year.enabled"><span class="slider"></span></label></div>
           </div>
         </section>
 
-        <section class="surface">
-          <div class="surface-head">
-            <div>
-              <h2>Debug APIs</h2>
-              <p class="detail-help">Ve qué está respondiendo de verdad. Esto sirve como panel de diagnóstico.</p>
-            </div>
-            <span class="pill" id="debugPill">Sin probar</span>
-          </div>
-          <div class="surface-body">
-            <div class="debug-grid">
-              <div class="stage-card"><span>Cumpleaños</span><strong id="birthdayApiState">Sin probar</strong><em id="birthdayApiMeta">Signia</em></div>
-              <div class="stage-card"><span>Mundial</span><strong id="mundialApiState">Sin probar</strong><em id="mundialApiMeta">Football data</em></div>
-              <div class="stage-card"><span>Último endpoint</span><strong id="lastEndpointState">—</strong><em>Más reciente</em></div>
-              <div class="stage-card"><span>Última respuesta</span><strong id="lastStatusState">—</strong><em>HTTP</em></div>
-            </div>
-            <div class="actions three">
-              <button class="btn secondary" type="button" id="debugBirthdayBtn">Ver API cumpleaños</button>
-              <button class="btn secondary" type="button" id="debugMundialBtn">Ver API Mundial</button>
-              <button class="btn ghost" type="button" id="clearDebugBtn">Limpiar debug</button>
-            </div>
-            <pre class="debug-output" id="debugOutput">Pulsa un botón para ver status, endpoint y JSON recibido.</pre>
-          </div>
-        </section>
-
-        <section class="surface">
+        <section class="card">
           <details>
-            <summary>Integraciones y avanzado</summary>
-            <div class="surface-body">
-              <div class="field-grid two">
-                <div class="field-box">
-                  <label class="field">Modo cumpleaños
-                    <select data-bind="birthday.mode">
-                      <option value="api">api</option>
-                      <option value="mock">mock</option>
-                    </select>
-                  </label>
-                </div>
-                <div class="field-box">
-                  <label class="field">Duración fuegos artificiales (ms)
-                    <input type="number" min="2500" step="500" data-bind="festivities.new_year.durationMs" placeholder="14000">
-                  </label>
-                </div>
-                <div class="field-box">
-                  <label class="field">Equipo prioritario Mundial
-                    <input type="text" data-bind="festivities.mundial_2026.priorityTeam" placeholder="Mexico">
-                  </label>
-                </div>
-                <div class="field-box">
-                  <label class="field">Mundial API URL
-                    <input type="text" data-bind="festivities.mundial_2026.sportsApiUrl" spellcheck="false">
-                  </label>
-                </div>
-                <div class="field-box">
-                  <label class="field">ISV script URL
-                    <input type="text" data-bind="campaigns.isv.scriptUrl" spellcheck="false">
-                  </label>
-                </div>
-                <div class="field-box">
-                  <label class="field">ISV sólo en estos hosts
-                    <textarea id="isvIncludeHostnames" class="compact" spellcheck="false" placeholder="Vacío = todos los hosts ruteados"></textarea>
-                  </label>
-                </div>
-                <div class="field-box">
-                  <label class="field">ISV excluir estos hosts
-                    <textarea id="isvExcludeHostnames" class="compact" spellcheck="false" placeholder="Ej: casitaiedis.edu.mx"></textarea>
-                  </label>
-                </div>
-              </div>
-              <details>
-                <summary>JSON avanzado</summary>
-                <div class="surface-body" style="padding-inline:0;padding-top:0;">
-                  <textarea id="jsonEditor" spellcheck="false"></textarea>
-                  <div class="actions two">
-                    <button class="btn secondary" type="button" id="applyJsonBtn">Aplicar JSON</button>
-                    <button class="btn ghost" type="button" id="formatJsonBtn">Formatear</button>
-                  </div>
-                </div>
-              </details>
+            <summary>Avanzado</summary>
+            <div class="body advanced-grid">
+              <div class="field"><div class="label">Modo cumpleaños</div><select data-bind="birthday.mode"><option value="api">api</option><option value="mock">mock</option></select></div>
+              <div class="field"><div class="label">Equipo Mundial</div><input data-bind="festivities.mundial_2026.priorityTeam"></div>
+              <div class="field"><div class="label">Duración fuegos</div><input type="number" min="2500" step="500" data-bind="festivities.new_year.durationMs"></div>
+              <div class="field"><div class="label">Mundial API</div><input data-bind="festivities.mundial_2026.sportsApiUrl"></div>
+              <div class="field"><div class="label">ISV script</div><input data-bind="campaigns.isv.scriptUrl"></div>
+              <div class="field"><div class="label">ISV incluir</div><textarea id="isvIncludeHostnames"></textarea></div>
+              <div class="field"><div class="label">ISV excluir</div><textarea id="isvExcludeHostnames"></textarea></div>
+              <div class="field"><div class="label">JSON</div><textarea class="json-editor" id="jsonEditor"></textarea><div class="actions"><button class="btn secondary" id="applyJsonBtn" type="button">Aplicar</button><button class="btn ghost" id="formatJsonBtn" type="button">Formatear</button></div></div>
             </div>
           </details>
         </section>
@@ -907,721 +269,351 @@
     </section>
   </main>
 
-  <nav class="savebar" aria-label="Guardar configuración">
-    <div class="savebar-inner">
-      <button class="btn secondary" type="button" id="loadBtn">Cargar actual</button>
-      <button class="btn" type="button" id="saveBtn" disabled>Guardar cambios</button>
-    </div>
-  </nav>
+  <nav class="savebar"><div class="savebar-inner"><button class="btn secondary" type="button" id="loadBtn">Cargar</button><button class="btn" type="button" id="saveBtn" disabled>Guardar</button></div></nav>
+
+  <dialog id="tokenDialog"><div class="sheet-head"><h3>Admin key</h3><button class="mini-chip" data-close-dialog>×</button></div><div class="sheet-body"><input type="password" id="adminToken" placeholder="EEI_ADMIN_TOKEN"><label class="row"><div><strong>Recordar</strong><span>este navegador</span></div><input type="checkbox" id="rememberToken"></label><div class="actions"><button class="btn secondary" id="forgetTokenBtn" type="button">Olvidar</button><button class="btn" id="saveTokenBtn" type="button">Guardar</button></div></div></dialog>
+
+  <dialog id="scheduleDialog"><div class="sheet-head"><h3>Programar</h3><button class="mini-chip" data-close-dialog>×</button></div><div class="sheet-body"><div class="seg"><button type="button" data-day="today">Hoy</button><button type="button" data-day="tomorrow">Mañana</button><button type="button" data-day="custom">Elegir</button></div><div class="two"><input type="date" id="scheduleDate"><input type="time" id="scheduleTime" step="60"></div><div class="seg"><button type="button" data-time="now">Ahora</button><button type="button" data-time="06:00">6:00</button><button type="button" data-time="22:00">22:00</button></div><div class="notice"><div class="eyebrow">VISTA</div><strong id="schedulePreview">—</strong><span id="schedulePreviewSub">—</span></div><div class="actions"><button class="btn secondary" data-close-dialog type="button">Cancelar</button><button class="btn" id="useScheduleBtn" type="button">Usar</button></div></div></dialog>
+
+  <dialog id="rawDialog"><div class="sheet-head"><h3 id="rawTitle">JSON</h3><button class="mini-chip" data-close-dialog>×</button></div><div class="sheet-body"><pre class="raw" id="rawOutput">—</pre><button class="btn secondary" id="copyRawBtn" type="button">Copiar</button></div></dialog>
+
+  <dialog id="hostsDialog"><div class="sheet-head"><h3>Hosts</h3><button class="mini-chip" data-close-dialog>×</button></div><div class="sheet-body"><div class="host-list" id="hostsList"></div><div class="two"><input id="newHostInput" placeholder="subdominio.dominio.com"><button class="btn" id="addHostBtn" type="button">Agregar</button></div><button class="btn secondary" data-close-dialog type="button">Listo</button></div></dialog>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v13";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v14";
 
     const TOKEN_STORAGE_KEY = "eei:adminToken";
     const REMEMBER_STORAGE_KEY = "eei:rememberToken";
-    const SAMPLE_BIRTHDAY = {
-      id: "preview",
-      name: "Colaborador Preview",
-      puesto: "Equipo EEI",
-      plantel: "Sandbox",
-      cumpleanos: "01-01"
-    };
-
+    const DEFAULT_MESSAGE = "Guarda tu avance.";
+    const SAMPLE_BIRTHDAY = { id: "preview", name: "Colaborador Preview", puesto: "Equipo EEI", plantel: "Sandbox", cumpleanos: "01-01" };
     const state = clone(DEFAULT_CONFIG);
-    let loadedOnce = false;
     let dirty = false;
-    const debugSummary = {
-      birthday: null,
-      mundial: null,
-      lastEndpoint: "—",
-      lastStatus: "—"
-    };
+    let loadedOnce = false;
+    let lastSavedAt = null;
+    let rawPayload = {};
 
+    const $ = (id) => document.getElementById(id);
     const refs = {
-      status: document.getElementById("saveStatus"),
-      token: document.getElementById("adminToken"),
-      tokenPill: document.getElementById("tokenPill"),
-      rememberToken: document.getElementById("rememberToken"),
-      saveTokenBtn: document.getElementById("saveTokenBtn"),
-      forgetTokenBtn: document.getElementById("forgetTokenBtn"),
-      loadBtn: document.getElementById("loadBtn"),
-      saveBtn: document.getElementById("saveBtn"),
-      activePill: document.getElementById("activePill"),
-      previewPill: document.getElementById("previewPill"),
-      jsonEditor: document.getElementById("jsonEditor"),
-      previewBirthdayBtn: document.getElementById("previewBirthdayBtn"),
-      previewMundialBtn: document.getElementById("previewMundialBtn"),
-      clearPreviewBtn: document.getElementById("clearPreviewBtn"),
-      debugBirthdayBtn: document.getElementById("debugBirthdayBtn"),
-      debugMundialBtn: document.getElementById("debugMundialBtn"),
-      clearDebugBtn: document.getElementById("clearDebugBtn"),
-      debugPill: document.getElementById("debugPill"),
-      debugOutput: document.getElementById("debugOutput"),
-      applyJsonBtn: document.getElementById("applyJsonBtn"),
-      formatJsonBtn: document.getElementById("formatJsonBtn"),
-      isvIncludeHostnames: document.getElementById("isvIncludeHostnames"),
-      isvExcludeHostnames: document.getElementById("isvExcludeHostnames"),
-      globalBlockedHostnames: document.getElementById("globalBlockedHostnames"),
-      heroGlobalState: document.getElementById("heroGlobalState"),
-      heroMaintenanceState: document.getElementById("heroMaintenanceState"),
-      heroModuleCount: document.getElementById("heroModuleCount"),
-      heroDirtyState: document.getElementById("heroDirtyState"),
-      blockedCount: document.getElementById("blockedCount"),
-      apiHealthSummary: document.getElementById("apiHealthSummary"),
-      maintenanceModePill: document.getElementById("maintenanceModePill"),
-      maintenanceTargetLocal: document.getElementById("maintenanceTargetLocal"),
-      maintenanceTargetHelp: document.getElementById("maintenanceTargetHelp"),
-      maintenanceSeverity: document.getElementById("maintenanceSeverity"),
-      maintenanceTitle: document.getElementById("maintenanceTitle"),
-      maintenanceMessage: document.getElementById("maintenanceMessage"),
-      maintenanceNowBtn: document.getElementById("maintenanceNowBtn"),
-      maintenanceTomorrowBtn: document.getElementById("maintenanceTomorrowBtn"),
-      maintenanceDisableBtn: document.getElementById("maintenanceDisableBtn"),
-      maintenancePresetButtons: Array.from(document.querySelectorAll("[data-maintenance-minutes]")),
-      previewHeadline: document.getElementById("previewHeadline"),
-      previewSubline: document.getElementById("previewSubline"),
-      previewStateBadge: document.getElementById("previewStateBadge"),
-      previewGlobalState: document.getElementById("previewGlobalState"),
-      previewCountdown: document.getElementById("previewCountdown"),
-      previewModuleCount: document.getElementById("previewModuleCount"),
-      previewBlockedCount: document.getElementById("previewBlockedCount"),
-      birthdayApiState: document.getElementById("birthdayApiState"),
-      birthdayApiMeta: document.getElementById("birthdayApiMeta"),
-      mundialApiState: document.getElementById("mundialApiState"),
-      mundialApiMeta: document.getElementById("mundialApiMeta"),
-      lastEndpointState: document.getElementById("lastEndpointState"),
-      lastStatusState: document.getElementById("lastStatusState")
+      globalChip: $("globalChip"), dirtyChip: $("dirtyChip"), quotaChip: $("quotaChip"), lastSaved: $("lastSaved"), maintChip: $("maintChip"),
+      message: $("maintenanceMessage"), messageCount: $("messageCount"), noticeSeverity: $("noticeSeverity"), noticeTitle: $("noticeTitle"), noticeMessage: $("noticeMessage"), noticeTime: $("noticeTime"),
+      activateMaintenanceBtn: $("activateMaintenanceBtn"), disableMaintenanceBtn: $("disableMaintenanceBtn"), previewMaintenanceBtn: $("previewMaintenanceBtn"), openScheduleBtn: $("openScheduleBtn"),
+      debugBirthdayBtn: $("debugBirthdayBtn"), debugMundialBtn: $("debugMundialBtn"), birthdayStatus: $("birthdayStatus"), mundialStatus: $("mundialStatus"), birthdayEndpoint: $("birthdayEndpoint"), mundialEndpoint: $("mundialEndpoint"), healthChip: $("healthChip"),
+      hostCount: $("hostCount"), hostMode: $("hostMode"), openHostsBtn: $("openHostsBtn"), hostsList: $("hostsList"), newHostInput: $("newHostInput"), addHostBtn: $("addHostBtn"),
+      moduleCount: $("moduleCount"), previewBirthdayBtn: $("previewBirthdayBtn"), previewMundialBtn: $("previewMundialBtn"),
+      loadBtn: $("loadBtn"), saveBtn: $("saveBtn"), openTokenBtn: $("openTokenBtn"), adminToken: $("adminToken"), rememberToken: $("rememberToken"), saveTokenBtn: $("saveTokenBtn"), forgetTokenBtn: $("forgetTokenBtn"),
+      tokenDialog: $("tokenDialog"), scheduleDialog: $("scheduleDialog"), rawDialog: $("rawDialog"), hostsDialog: $("hostsDialog"), rawTitle: $("rawTitle"), rawOutput: $("rawOutput"), copyRawBtn: $("copyRawBtn"),
+      scheduleDate: $("scheduleDate"), scheduleTime: $("scheduleTime"), schedulePreview: $("schedulePreview"), schedulePreviewSub: $("schedulePreviewSub"), useScheduleBtn: $("useScheduleBtn"),
+      isvIncludeHostnames: $("isvIncludeHostnames"), isvExcludeHostnames: $("isvExcludeHostnames"), jsonEditor: $("jsonEditor"), applyJsonBtn: $("applyJsonBtn"), formatJsonBtn: $("formatJsonBtn")
     };
 
     boot();
 
     async function boot() {
-      bindControls();
+      bind();
       hydrateToken();
+      ensureDefaults();
       render();
       await loadCurrentConfig({ initial: true });
       await startEEI(state, { sandbox: true });
       render();
     }
 
-    function bindControls() {
-      document.querySelectorAll("[data-bind]").forEach((control) => {
-        control.addEventListener("input", () => {
-          writeControl(control);
-          markDirty();
-          render();
-          updateEEI(state, { sandbox: true });
-        });
-      });
+    function bind() {
+      document.querySelectorAll("[data-bind]").forEach((control) => control.addEventListener("input", () => { writeControl(control); markDirty(); render(); updatePreview(); }));
+      document.querySelectorAll("[data-preset]").forEach((btn) => btn.addEventListener("click", () => applyPreset(btn.dataset.preset)));
+      document.querySelectorAll("[data-close-dialog]").forEach((btn) => btn.addEventListener("click", () => btn.closest("dialog")?.close()));
+      document.querySelectorAll("[data-day]").forEach((btn) => btn.addEventListener("click", () => chooseDay(btn.dataset.day)));
+      document.querySelectorAll("[data-time]").forEach((btn) => btn.addEventListener("click", () => chooseTime(btn.dataset.time)));
 
-      [refs.maintenanceTargetLocal, refs.maintenanceSeverity, refs.maintenanceTitle, refs.maintenanceMessage].forEach((control) => {
-        control.addEventListener("input", () => {
-          readMaintenanceControls();
-          markDirty();
-          render();
-          updateEEI(state, { sandbox: true });
-        });
-      });
+      refs.message.addEventListener("input", () => { ensureDefaults(); state.maintenance.message = refs.message.value; markDirty(); render(); updatePreview(); });
+      refs.activateMaintenanceBtn.addEventListener("click", () => { ensureDefaults(); state.maintenance.enabled = true; if (!state.maintenance.targetAt) applyPreset("5", false); markDirty(); render(); updatePreview(); });
+      refs.disableMaintenanceBtn.addEventListener("click", () => { ensureDefaults(); state.maintenance.enabled = false; markDirty(); render(); updatePreview(); });
+      refs.previewMaintenanceBtn.addEventListener("click", updatePreview);
+      refs.openScheduleBtn.addEventListener("click", openSchedule);
+      refs.useScheduleBtn.addEventListener("click", useSchedule);
 
-      refs.maintenancePresetButtons.forEach((button) => {
-        button.addEventListener("click", () => applyMaintenancePreset(Number(button.dataset.maintenanceMinutes || 15)));
-      });
-      refs.maintenanceNowBtn.addEventListener("click", activateMaintenanceNow);
-      refs.maintenanceTomorrowBtn.addEventListener("click", scheduleMaintenanceTomorrowMorning);
-      refs.maintenanceDisableBtn.addEventListener("click", disableMaintenance);
-
-      refs.token.addEventListener("input", () => {
-        updateTokenUi();
-        markDirty(false);
-      });
-      refs.rememberToken.addEventListener("change", () => {
-        localStorage.setItem(REMEMBER_STORAGE_KEY, refs.rememberToken.checked ? "1" : "0");
-        if (refs.rememberToken.checked && refs.token.value.trim()) {
-          saveTokenLocal();
-        }
-        updateTokenUi();
-      });
-      refs.saveTokenBtn.addEventListener("click", saveTokenLocal);
-      refs.forgetTokenBtn.addEventListener("click", forgetTokenLocal);
-      refs.loadBtn.addEventListener("click", () => loadCurrentConfig({ manual: true }));
-      refs.saveBtn.addEventListener("click", saveConfig);
-      refs.previewBirthdayBtn.addEventListener("click", previewBirthday);
-      refs.previewMundialBtn.addEventListener("click", previewMundial);
-      refs.clearPreviewBtn.addEventListener("click", clearPreview);
       refs.debugBirthdayBtn.addEventListener("click", () => debugApi("birthday"));
       refs.debugMundialBtn.addEventListener("click", () => debugApi("mundial"));
-      refs.clearDebugBtn.addEventListener("click", clearDebug);
-      refs.globalBlockedHostnames.addEventListener("input", () => {
-        ensureInjectionConfig();
-        state.injection.excludeHostnamesExact = parseExactHostList(refs.globalBlockedHostnames.value);
-        markDirty();
-        render();
-      });
-      refs.isvIncludeHostnames.addEventListener("input", () => {
-        ensureIsvConfig();
-        state.campaigns.isv.includeHostnames = parseHostList(refs.isvIncludeHostnames.value);
-        markDirty();
-        render();
-      });
-      refs.isvExcludeHostnames.addEventListener("input", () => {
-        ensureIsvConfig();
-        state.campaigns.isv.excludeHostnames = parseHostList(refs.isvExcludeHostnames.value);
-        markDirty();
-        render();
-      });
+      refs.birthdayStatus.addEventListener("click", () => showRaw("birthday"));
+      refs.mundialStatus.addEventListener("click", () => showRaw("mundial"));
+      refs.copyRawBtn.addEventListener("click", () => navigator.clipboard?.writeText(refs.rawOutput.textContent || ""));
+      refs.previewBirthdayBtn.addEventListener("click", previewBirthday);
+      refs.previewMundialBtn.addEventListener("click", previewMundial);
+
+      refs.openHostsBtn.addEventListener("click", () => { renderHosts(); refs.hostsDialog.showModal(); });
+      refs.addHostBtn.addEventListener("click", addHost);
+      refs.newHostInput.addEventListener("keydown", (event) => { if (event.key === "Enter") addHost(); });
+
+      refs.openTokenBtn.addEventListener("click", () => refs.tokenDialog.showModal());
+      refs.saveTokenBtn.addEventListener("click", saveTokenLocal);
+      refs.forgetTokenBtn.addEventListener("click", forgetTokenLocal);
+      refs.rememberToken.addEventListener("change", () => { localStorage.setItem(REMEMBER_STORAGE_KEY, refs.rememberToken.checked ? "1" : "0"); if (refs.rememberToken.checked && refs.adminToken.value.trim()) saveTokenLocal(); });
+      refs.loadBtn.addEventListener("click", () => loadCurrentConfig({ manual: true }));
+      refs.saveBtn.addEventListener("click", saveConfig);
+
+      refs.isvIncludeHostnames.addEventListener("input", () => { ensureIsvConfig(); state.campaigns.isv.includeHostnames = parseHostList(refs.isvIncludeHostnames.value); markDirty(); render(); });
+      refs.isvExcludeHostnames.addEventListener("input", () => { ensureIsvConfig(); state.campaigns.isv.excludeHostnames = parseHostList(refs.isvExcludeHostnames.value); markDirty(); render(); });
       refs.applyJsonBtn.addEventListener("click", applyJson);
-      refs.formatJsonBtn.addEventListener("click", () => {
-        refs.jsonEditor.value = JSON.stringify(state, null, 2);
-      });
+      refs.formatJsonBtn.addEventListener("click", () => refs.jsonEditor.value = JSON.stringify(state, null, 2));
+      refs.scheduleDate.addEventListener("input", renderSchedulePreview);
+      refs.scheduleTime.addEventListener("input", renderSchedulePreview);
     }
 
     function hydrateToken() {
-      const remembered = localStorage.getItem(REMEMBER_STORAGE_KEY) === "1";
       const saved = localStorage.getItem(TOKEN_STORAGE_KEY) || "";
-      refs.rememberToken.checked = remembered || Boolean(saved);
-      if (saved) {
-        refs.token.value = saved;
-      }
-      updateTokenUi();
-    }
-
-    function saveTokenLocal() {
-      const token = refs.token.value.trim();
-      if (!token) {
-        setStatus("Pega la llave primero", "warn");
-        return;
-      }
-      localStorage.setItem(TOKEN_STORAGE_KEY, token);
-      localStorage.setItem(REMEMBER_STORAGE_KEY, "1");
-      refs.rememberToken.checked = true;
-      updateTokenUi();
-      setStatus("Llave guardada en este dispositivo", "ok");
-    }
-
-    function forgetTokenLocal() {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      localStorage.removeItem(REMEMBER_STORAGE_KEY);
-      refs.token.value = "";
-      refs.rememberToken.checked = false;
-      updateTokenUi();
-      setStatus("Llave olvidada", "ok");
-    }
-
-    function updateTokenUi() {
-      const hasTyped = Boolean(refs.token.value.trim());
-      const hasSaved = Boolean(localStorage.getItem(TOKEN_STORAGE_KEY));
-      refs.tokenPill.textContent = hasSaved ? "Guardada" : hasTyped ? "Lista" : "Sin llave";
-      refs.tokenPill.className = `pill ${hasSaved || hasTyped ? "on" : ""}`;
+      refs.adminToken.value = saved;
+      refs.rememberToken.checked = localStorage.getItem(REMEMBER_STORAGE_KEY) === "1" || Boolean(saved);
     }
 
     async function loadCurrentConfig({ initial = false, manual = false } = {}) {
-      setStatus(initial ? "Cargando config" : "Cargando actual", "loading");
+      setDirtyChip(initial ? "Cargando" : "Cargando", "warn");
       try {
         const response = await fetch("/__eei/config", { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const payload = await response.json();
-        replaceState(payload);
-        loadedOnce = true;
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        replaceState(await response.json());
+        ensureDefaults();
         dirty = false;
+        loadedOnce = true;
         render();
-        await updateEEI(state, { sandbox: true, replace: true });
-        setStatus(manual ? "Config actual cargada" : "Config cargada", "ok");
+        await updatePreview(true);
+        if (manual) flash("Cargado", "ok");
       } catch (error) {
         loadedOnce = false;
         render();
-        setStatus(`No se pudo cargar: ${error.message}`, "warn");
+        flash(`Error ${error.message}`, "bad");
       }
     }
 
     async function saveConfig() {
       readControls();
-      readMaintenanceControls();
-      const token = refs.token.value.trim();
-      if (!token) {
-        setStatus("Falta Admin key", "warn");
-        return;
-      }
-      if (refs.rememberToken.checked) {
-        localStorage.setItem(TOKEN_STORAGE_KEY, token);
-        localStorage.setItem(REMEMBER_STORAGE_KEY, "1");
-      }
-
-      setStatus("Guardando", "loading");
+      const token = refs.adminToken.value.trim();
+      if (!token) { refs.tokenDialog.showModal(); flash("Falta key", "bad"); return; }
       refs.saveBtn.disabled = true;
+      setDirtyChip("Guardando", "warn");
       try {
-        const response = await fetch("/__eei/config", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(state)
-        });
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(payload.error || `HTTP ${response.status}`);
-        }
+        const response = await fetch("/__eei/config", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(state) });
+        if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.error || `HTTP ${response.status}`); }
         replaceState(await response.json());
         dirty = false;
+        lastSavedAt = new Date();
         render();
-        await updateEEI(state, { sandbox: true, replace: true });
-        setStatus("Guardado", "ok");
+        await updatePreview(true);
+        flash("Guardado", "ok");
       } catch (error) {
         refs.saveBtn.disabled = false;
-        setStatus(`Falló: ${error.message}`, "warn");
+        flash(`Falló ${error.message}`, "bad");
       }
     }
 
-    async function previewBirthday() {
-      const preview = deepMerge(state, {
-        enabled: true,
-        birthday: {
-          enabled: true,
-          mode: "mock",
-          showOncePerDay: false,
-          mockBirthdays: [SAMPLE_BIRTHDAY]
-        }
-      });
-      refs.previewPill.textContent = "Cumple preview";
-      refs.previewPill.className = "pill on";
-      await updateEEI(preview, { sandbox: true, forceBirthday: true, replace: true });
-      setStatus("Preview de cumple", "ok");
-    }
-
-    async function previewMundial() {
-      const preview = deepMerge(state, {
-        enabled: true,
-        festivities: {
-          mundial_2026: {
-            enabled: true,
-            ballCount: Math.max(3, Number(state.festivities?.mundial_2026?.ballCount || 4))
-          }
-        }
-      });
-      refs.previewPill.textContent = "Mundial preview";
-      refs.previewPill.className = "pill on";
-      await updateEEI(preview, { sandbox: true, replace: true });
-      setStatus("Preview mundial", "ok");
-    }
-
-    async function clearPreview() {
-      refs.previewPill.textContent = "Listo";
-      refs.previewPill.className = "pill on";
-      await updateEEI(state, { sandbox: true, replace: true });
-      setStatus("Preview limpio", "ok");
-    }
-
-    async function debugApi(kind) {
-      const today = todayInTimeZone("America/Mexico_City");
-      const endpoint = kind === "birthday"
-        ? "/__eei/signia-birthdays?debug=1"
-        : `/__eei/worldcup-matches?debug=1&date=${encodeURIComponent(today)}`;
-      refs.debugPill.textContent = "Probando";
-      refs.debugPill.className = "pill warn";
-      refs.debugOutput.textContent = `GET ${endpoint}\nCargando...`;
-      try {
-        const response = await fetch(endpoint, {
-          cache: "no-store",
-          credentials: "same-origin",
-          headers: { Accept: "application/json" }
-        });
-        const text = await response.text();
-        let payload;
-        try {
-          payload = JSON.parse(text);
-        } catch {
-          payload = text;
-        }
-        const summary = {
-          endpoint,
-          ok: response.ok,
-          status: response.status,
-          statusText: response.statusText,
-          receivedAt: new Date().toISOString(),
-          payload
-        };
-        debugSummary[kind] = summary;
-        debugSummary.lastEndpoint = endpoint;
-        debugSummary.lastStatus = `${response.status}${response.ok ? " OK" : ""}`;
-        refs.debugPill.textContent = response.ok ? "OK" : `HTTP ${response.status}`;
-        refs.debugPill.className = `pill ${response.ok ? "on" : "warn"}`;
-        refs.debugOutput.textContent = JSON.stringify(summary, null, 2);
-        render();
-      } catch (error) {
-        const summary = { endpoint, error: error.message, receivedAt: new Date().toISOString() };
-        debugSummary[kind] = summary;
-        debugSummary.lastEndpoint = endpoint;
-        debugSummary.lastStatus = "Error";
-        refs.debugPill.textContent = "Error";
-        refs.debugPill.className = "pill warn";
-        refs.debugOutput.textContent = JSON.stringify(summary, null, 2);
-        render();
-      }
-    }
-
-    function clearDebug() {
-      debugSummary.birthday = null;
-      debugSummary.mundial = null;
-      debugSummary.lastEndpoint = "—";
-      debugSummary.lastStatus = "—";
-      refs.debugPill.textContent = "Sin probar";
-      refs.debugPill.className = "pill";
-      refs.debugOutput.textContent = "Pulsa un botón para ver status, endpoint y JSON recibido.";
-      render();
-    }
-
-    function activateMaintenanceNow() {
+    function applyPreset(value, update = true) {
+      ensureDefaults();
       const now = new Date();
-      ensureMaintenanceDefaults();
+      let target = now;
+      if (value !== "now") target = new Date(Date.now() + Number(value) * 60_000);
       state.maintenance.enabled = true;
-      state.maintenance.severity = "emergency";
-      state.maintenance.title = "Mantenimiento urgente";
-      state.maintenance.message = "La plataforma está entrando en una ventana breve de servicio.";
-      state.maintenance.targetAt = toIsoWithOffset(now);
-      markDirty();
-      render();
-      updateEEI(state, { sandbox: true, replace: true });
-      setStatus("Aviso de mantenimiento activado para ahora", "ok");
-    }
-
-    function scheduleMaintenanceTomorrowMorning() {
-      const next = new Date();
-      next.setDate(next.getDate() + 1);
-      next.setHours(6, 0, 0, 0);
-      ensureMaintenanceDefaults();
-      state.maintenance.enabled = true;
-      state.maintenance.severity = "planned";
-      state.maintenance.title = state.maintenance.title || "Mantenimiento programado";
-      state.maintenance.message = state.maintenance.message || "La plataforma entrará en una ventana breve de servicio.";
-      state.maintenance.targetAt = toIsoWithOffset(next);
-      markDirty();
-      render();
-      updateEEI(state, { sandbox: true, replace: true });
-      setStatus("Mantenimiento programado para mañana 6:00 AM", "ok");
-    }
-
-    function applyMaintenancePreset(minutes) {
-      const target = new Date(Date.now() + minutes * 60_000);
-      ensureMaintenanceDefaults();
-      state.maintenance.enabled = true;
-      state.maintenance.severity = minutes <= 15 ? "urgent" : "planned";
-      state.maintenance.title = minutes <= 15 ? "Mantenimiento urgente" : "Mantenimiento programado";
-      state.maintenance.message = minutes <= 15
-        ? "La plataforma entrará en una ventana breve de servicio. Guarda tu avance."
-        : "La plataforma entrará en una ventana breve de servicio.";
+      state.maintenance.severity = value === "now" || Number(value) <= 15 ? "urgent" : "planned";
+      state.maintenance.title = value === "now" || Number(value) <= 15 ? "Mantenimiento urgente" : "Mantenimiento programado";
+      state.maintenance.message = refs.message.value.trim() || DEFAULT_MESSAGE;
       state.maintenance.targetAt = toIsoWithOffset(target);
       markDirty();
       render();
-      updateEEI(state, { sandbox: true, replace: true });
-      setStatus(`Aviso listo para iniciar en ${minutes} min`, "ok");
+      if (update) updatePreview();
     }
 
-    function disableMaintenance() {
-      ensureMaintenanceDefaults();
-      state.maintenance.enabled = false;
+    function openSchedule() {
+      const d = state.maintenance?.targetAt ? new Date(state.maintenance.targetAt) : new Date(Date.now() + 15 * 60_000);
+      refs.scheduleDate.value = dateInput(d);
+      refs.scheduleTime.value = timeInput(d);
+      renderSchedulePreview();
+      refs.scheduleDialog.showModal();
+    }
+
+    function chooseDay(day) {
+      const d = new Date();
+      if (day === "tomorrow") d.setDate(d.getDate() + 1);
+      if (day !== "custom") refs.scheduleDate.value = dateInput(d);
+      document.querySelectorAll("[data-day]").forEach((b) => b.classList.toggle("active", b.dataset.day === day));
+      renderSchedulePreview();
+    }
+
+    function chooseTime(time) {
+      if (time === "now") {
+        refs.scheduleTime.value = timeInput(new Date());
+        refs.scheduleDate.value ||= dateInput(new Date());
+      } else {
+        refs.scheduleTime.value = time;
+      }
+      document.querySelectorAll("[data-time]").forEach((b) => b.classList.toggle("active", b.dataset.time === time));
+      renderSchedulePreview();
+    }
+
+    function useSchedule() {
+      const date = new Date(`${refs.scheduleDate.value}T${refs.scheduleTime.value || "00:00"}`);
+      if (Number.isNaN(date.getTime())) return;
+      ensureDefaults();
+      state.maintenance.enabled = true;
+      state.maintenance.targetAt = toIsoWithOffset(date);
+      state.maintenance.severity = date.getTime() - Date.now() <= 15 * 60_000 ? "urgent" : "planned";
+      state.maintenance.title = state.maintenance.severity === "urgent" ? "Mantenimiento urgente" : "Mantenimiento programado";
+      state.maintenance.message = refs.message.value.trim() || DEFAULT_MESSAGE;
+      refs.scheduleDialog.close();
       markDirty();
       render();
-      updateEEI(state, { sandbox: true, replace: true });
-      setStatus("Aviso de mantenimiento desactivado", "ok");
+      updatePreview();
     }
 
-    function todayInTimeZone(timeZone) {
-      const parts = new Intl.DateTimeFormat("en-CA", {
-        timeZone,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit"
-      }).formatToParts(new Date());
-      const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-      return `${byType.year}-${byType.month}-${byType.day}`;
+    function renderSchedulePreview() {
+      const date = new Date(`${refs.scheduleDate.value}T${refs.scheduleTime.value || "00:00"}`);
+      if (Number.isNaN(date.getTime())) { refs.schedulePreview.textContent = "—"; refs.schedulePreviewSub.textContent = "—"; return; }
+      refs.schedulePreview.textContent = new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(date);
+      refs.schedulePreviewSub.textContent = countdownTo(date);
+    }
+
+    async function updatePreview(replace = true) {
+      await updateEEI(state, { sandbox: true, replace });
+    }
+
+    async function previewBirthday() {
+      const preview = deepMerge(state, { enabled: true, birthday: { enabled: true, mode: "mock", showOncePerDay: false, mockBirthdays: [SAMPLE_BIRTHDAY] } });
+      await updateEEI(preview, { sandbox: true, forceBirthday: true, replace: true });
+    }
+
+    async function previewMundial() {
+      const preview = deepMerge(state, { enabled: true, festivities: { mundial_2026: { enabled: true, ballCount: Math.max(3, Number(state.festivities?.mundial_2026?.ballCount || 4)) } } });
+      await updateEEI(preview, { sandbox: true, replace: true });
+    }
+
+    async function debugApi(kind) {
+      const endpoint = kind === "birthday" ? "/__eei/signia-birthdays?debug=1" : `/__eei/worldcup-matches?debug=1&date=${todayInTimeZone("America/Mexico_City")}`;
+      setApiState(kind, "…", "warn", endpoint);
+      try {
+        const response = await fetch(endpoint, { cache: "no-store", credentials: "same-origin", headers: { Accept: "application/json" } });
+        const text = await response.text();
+        let payload;
+        try { payload = JSON.parse(text); } catch { payload = text; }
+        rawPayload[kind] = { endpoint, ok: response.ok, status: response.status, receivedAt: new Date().toISOString(), payload };
+        setApiState(kind, response.ok ? "OK" : String(response.status), response.ok ? "ok" : "bad", endpoint);
+        renderHealth();
+      } catch (error) {
+        rawPayload[kind] = { endpoint, error: error.message, receivedAt: new Date().toISOString() };
+        setApiState(kind, "ERR", "bad", endpoint);
+        renderHealth();
+      }
+    }
+
+    function setApiState(kind, label, tone, endpoint) {
+      const el = kind === "birthday" ? refs.birthdayStatus : refs.mundialStatus;
+      const endpointEl = kind === "birthday" ? refs.birthdayEndpoint : refs.mundialEndpoint;
+      el.textContent = label;
+      el.className = `mini-chip ${tone}`;
+      endpointEl.textContent = endpoint;
+    }
+
+    function renderHealth() {
+      const values = [rawPayload.birthday, rawPayload.mundial].filter(Boolean);
+      if (!values.length) { refs.healthChip.textContent = "—"; refs.healthChip.className = "mini-chip"; return; }
+      const ok = values.filter((v) => v.ok).length;
+      refs.healthChip.textContent = `${ok}/${values.length}`;
+      refs.healthChip.className = `mini-chip ${ok === values.length ? "ok" : "bad"}`;
+    }
+
+    function showRaw(kind) {
+      const payload = rawPayload[kind];
+      if (!payload) return;
+      refs.rawTitle.textContent = kind === "birthday" ? "Cumpleaños" : "Mundial";
+      refs.rawOutput.textContent = JSON.stringify(payload, null, 2);
+      refs.rawDialog.showModal();
+    }
+
+    function addHost() {
+      ensureInjectionConfig();
+      const host = normalizeHost(refs.newHostInput.value);
+      if (!host || host.includes("*")) return;
+      if (!state.injection.excludeHostnamesExact.includes(host)) state.injection.excludeHostnamesExact.push(host);
+      refs.newHostInput.value = "";
+      markDirty();
+      render();
+      renderHosts();
+    }
+
+    function renderHosts() {
+      ensureInjectionConfig();
+      const hosts = state.injection.excludeHostnamesExact || [];
+      refs.hostsList.innerHTML = hosts.length ? hosts.map((host, index) => `<div class="host-chip"><span>${escapeHtml(host)}</span><button type="button" data-remove-host="${index}">×</button></div>`).join("") : `<div class="row"><div><strong>0</strong><span>bloqueados</span></div></div>`;
+      refs.hostsList.querySelectorAll("[data-remove-host]").forEach((button) => button.addEventListener("click", () => { state.injection.excludeHostnamesExact.splice(Number(button.dataset.removeHost), 1); markDirty(); render(); renderHosts(); }));
+    }
+
+    function saveTokenLocal() {
+      const token = refs.adminToken.value.trim();
+      if (!token) return;
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      localStorage.setItem(REMEMBER_STORAGE_KEY, "1");
+      refs.rememberToken.checked = true;
+      refs.tokenDialog.close();
+      flash("Key guardada", "ok");
+    }
+
+    function forgetTokenLocal() {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(REMEMBER_STORAGE_KEY);
+      refs.adminToken.value = "";
+      refs.rememberToken.checked = false;
     }
 
     function applyJson() {
-      try {
-        const payload = JSON.parse(refs.jsonEditor.value);
-        replaceState(payload);
-        markDirty();
-        render();
-        updateEEI(state, { sandbox: true, replace: true });
-        setStatus("JSON aplicado", "ok");
-      } catch (error) {
-        setStatus(`JSON inválido: ${error.message}`, "warn");
-      }
+      try { replaceState(JSON.parse(refs.jsonEditor.value)); ensureDefaults(); markDirty(); render(); updatePreview(); } catch (error) { flash("JSON inválido", "bad"); }
     }
 
     function render() {
+      ensureDefaults();
       syncControls();
-      syncMaintenanceControls();
-      refs.globalBlockedHostnames.value = formatHostList(state.injection?.excludeHostnamesExact);
+      refs.message.value = state.maintenance.message || DEFAULT_MESSAGE;
+      refs.messageCount.textContent = `${refs.message.value.length}/160`;
+      refs.globalChip.className = `chip ${state.enabled ? "ok" : "bad"}`;
+      refs.globalChip.innerHTML = `<span class="dot"></span><span>${state.enabled ? "LIVE" : "OFF"}</span>`;
+      setDirtyChip(dirty ? "Cambios" : "Sin cambios", dirty ? "warn" : "ok");
+      refs.saveBtn.disabled = !loadedOnce || !dirty;
+      refs.lastSaved.textContent = lastSavedAt ? `Guardado ${timeInput(lastSavedAt)}` : "No guardado";
+      refs.maintChip.textContent = state.maintenance.enabled ? maintenanceStateText() : "OFF";
+      refs.maintChip.className = `mini-chip ${state.maintenance.enabled ? "ok" : ""}`;
+      refs.noticeSeverity.textContent = state.maintenance.enabled ? String(state.maintenance.severity || "planned").toUpperCase() : "NORMAL";
+      refs.noticeTitle.textContent = state.maintenance.enabled ? (state.maintenance.title || "Mantenimiento") : "Sin mantenimiento";
+      refs.noticeMessage.textContent = state.maintenance.enabled ? (state.maintenance.message || "") : "EEI listo.";
+      refs.noticeTime.textContent = state.maintenance.enabled ? maintenanceStateText() : "—";
+      const active = [state.campaigns?.isv?.enabled, state.birthday?.enabled, state.festivities?.mundial_2026?.enabled, state.festivities?.christmas?.enabled, state.festivities?.new_year?.enabled].filter(Boolean).length;
+      refs.moduleCount.textContent = `${active} ON`;
+      refs.hostCount.textContent = String(state.injection?.excludeHostnamesExact?.length || 0);
       refs.isvIncludeHostnames.value = formatHostList(state.campaigns?.isv?.includeHostnames);
       refs.isvExcludeHostnames.value = formatHostList(state.campaigns?.isv?.excludeHostnames);
       refs.jsonEditor.value = JSON.stringify(state, null, 2);
-
-      const activeModules = [
-        state.campaigns?.isv?.enabled,
-        state.maintenance?.enabled,
-        state.birthday?.enabled,
-        state.festivities?.mundial_2026?.enabled,
-        state.festivities?.christmas?.enabled,
-        state.festivities?.new_year?.enabled
-      ].filter(Boolean).length;
-      refs.activePill.textContent = `${activeModules} activo${activeModules === 1 ? "" : "s"}`;
-      refs.activePill.className = `pill ${activeModules ? "on" : ""}`;
-      refs.saveBtn.disabled = !loadedOnce || !dirty;
-
-      refs.heroGlobalState.textContent = state.enabled ? "Activo" : "Apagado";
-      refs.heroMaintenanceState.textContent = maintenanceSummary();
-      refs.heroModuleCount.textContent = `${activeModules} activo${activeModules === 1 ? "" : "s"}`;
-      refs.heroDirtyState.textContent = dirty ? "Cambios pendientes" : "Sin cambios";
-      refs.blockedCount.textContent = String((state.injection?.excludeHostnamesExact || []).length);
-      refs.apiHealthSummary.textContent = summarizeApiHealth();
-      refs.maintenanceModePill.textContent = state.maintenance?.enabled ? "Aviso activo" : "Operación normal";
-      refs.maintenanceModePill.className = `pill ${state.maintenance?.enabled ? "on" : ""}`;
-
-      refs.previewHeadline.textContent = state.maintenance?.enabled
-        ? (state.maintenance?.title || "Mantenimiento")
-        : "Sin mantenimiento activo";
-      refs.previewSubline.textContent = state.maintenance?.enabled
-        ? (state.maintenance?.message || "La plataforma sigue operando con aviso activo.")
-        : "EEI listo para probar sin afectar usuarios reales.";
-      refs.previewGlobalState.textContent = state.enabled ? "Activo" : "Apagado";
-      refs.previewCountdown.textContent = formatMaintenanceCountdown(state.maintenance?.targetAt, state.maintenance?.enabled);
-      refs.previewModuleCount.textContent = String(activeModules);
-      refs.previewBlockedCount.textContent = String((state.injection?.excludeHostnamesExact || []).length);
-      refs.previewStateBadge.innerHTML = `<span class="dot"></span><span>${state.maintenance?.enabled ? "Mantenimiento" : "Normal"}</span>`;
-
-      syncDebugSummary();
+      renderHealth();
     }
 
-    function syncDebugSummary() {
-      const b = debugSummary.birthday;
-      const m = debugSummary.mundial;
-      refs.birthdayApiState.textContent = b ? (b.ok ? "OK" : `HTTP ${b.status || "ERR"}`) : "Sin probar";
-      refs.birthdayApiMeta.textContent = b?.endpoint || "Signia";
-      refs.mundialApiState.textContent = m ? (m.ok ? "OK" : `HTTP ${m.status || "ERR"}`) : "Sin probar";
-      refs.mundialApiMeta.textContent = m?.endpoint || "Football data";
-      refs.lastEndpointState.textContent = truncate(debugSummary.lastEndpoint, 28);
-      refs.lastStatusState.textContent = debugSummary.lastStatus;
-    }
+    function setDirtyChip(label, tone) { refs.dirtyChip.textContent = label; refs.dirtyChip.className = `chip ${tone || ""}`; }
+    function flash(label, tone) { refs.dirtyChip.textContent = label; refs.dirtyChip.className = `chip ${tone || ""}`; setTimeout(() => render(), 1200); }
+    function markDirty() { dirty = true; refs.saveBtn.disabled = !loadedOnce || !dirty; }
 
-    function summarizeApiHealth() {
-      const items = [debugSummary.birthday, debugSummary.mundial].filter(Boolean);
-      if (!items.length) return "Sin probar";
-      const okCount = items.filter((item) => item.ok).length;
-      return `${okCount}/${items.length} OK`;
-    }
-
-    function maintenanceSummary() {
-      if (!state.maintenance?.enabled) {
-        return "Apagado";
-      }
-      return formatMaintenanceCountdown(state.maintenance?.targetAt, true);
-    }
-
-    function formatMaintenanceCountdown(targetAt, enabled) {
-      if (!enabled) return "Sin aviso";
-      const target = Date.parse(targetAt || "");
-      if (!Number.isFinite(target)) return "Sin fecha";
-      const diff = target - Date.now();
-      if (diff <= 0) return "Activa ahora";
-      const mins = Math.round(diff / 60000);
-      if (mins < 60) return `En ${mins} min`;
-      const hours = Math.floor(mins / 60);
-      const rest = mins % 60;
-      return rest ? `En ${hours} h ${rest} min` : `En ${hours} h`;
-    }
-
-    function markDirty(value = true) {
-      if (value) dirty = true;
-      refs.saveBtn.disabled = !loadedOnce || !dirty;
-    }
-
-    function syncControls() {
-      document.querySelectorAll("[data-bind]").forEach((control) => {
-        const value = getPath(state, control.dataset.bind);
-        if (control.type === "checkbox") {
-          control.checked = Boolean(value);
-        } else {
-          control.value = value ?? "";
-        }
-      });
-    }
-
-    function syncMaintenanceControls() {
-      refs.maintenanceTargetLocal.value = isoToDatetimeLocalValue(state.maintenance?.targetAt);
-      refs.maintenanceSeverity.value = state.maintenance?.severity || "planned";
-      refs.maintenanceTitle.value = state.maintenance?.title || "";
-      refs.maintenanceMessage.value = state.maintenance?.message || "";
-      refs.maintenanceTargetHelp.textContent = describeLocalDateTime(refs.maintenanceTargetLocal.value);
-      const activeMinutes = activePresetMinutes();
-      refs.maintenancePresetButtons.forEach((button) => {
-        button.classList.toggle("active", Number(button.dataset.maintenanceMinutes) === activeMinutes);
-      });
-    }
-
-    function activePresetMinutes() {
-      const target = Date.parse(state.maintenance?.targetAt || "");
-      if (!Number.isFinite(target) || !state.maintenance?.enabled) return null;
-      const minutes = Math.round((target - Date.now()) / 60000);
-      return [5, 15, 30, 60].find((item) => Math.abs(item - minutes) <= 1) || null;
-    }
-
-    function readControls() {
-      document.querySelectorAll("[data-bind]").forEach(writeControl);
-    }
-
-    function readMaintenanceControls() {
-      ensureMaintenanceDefaults();
-      state.maintenance.targetAt = datetimeLocalToIso(refs.maintenanceTargetLocal.value) || state.maintenance.targetAt;
-      state.maintenance.severity = refs.maintenanceSeverity.value || "planned";
-      state.maintenance.title = refs.maintenanceTitle.value.trim();
-      state.maintenance.message = refs.maintenanceMessage.value.trim();
-    }
-
-    function formatHostList(value) {
-      return Array.isArray(value) ? value.join("\n") : "";
-    }
-
-    function parseHostList(value) {
-      return String(value || "")
-        .split(/[\n,]/)
-        .map((item) => item.trim().toLowerCase())
-        .filter(Boolean);
-    }
-
-    function parseExactHostList(value) {
-      return parseHostList(value).filter((item) => !item.includes("*"));
-    }
-
-    function ensureInjectionConfig() {
-      state.injection = state.injection || {};
-      if (!Array.isArray(state.injection.excludeHostnamesExact)) {
-        state.injection.excludeHostnamesExact = [];
-      }
-    }
-
-    function ensureIsvConfig() {
-      state.campaigns = state.campaigns || {};
-      state.campaigns.isv = state.campaigns.isv || {};
-    }
-
-    function ensureMaintenanceDefaults() {
-      state.maintenance = state.maintenance || {};
-      state.maintenance.title = state.maintenance.title || "Mantenimiento programado";
-      state.maintenance.message = state.maintenance.message || "La plataforma entrará en una ventana breve de servicio.";
-      state.maintenance.severity = state.maintenance.severity || "planned";
-      state.maintenance.targetAt = state.maintenance.targetAt || toIsoWithOffset(new Date(Date.now() + 30 * 60_000));
-    }
-
-    function writeControl(control) {
-      let value = control.type === "checkbox" ? control.checked : control.value;
-      if (control.type === "number") {
-        value = Number(value);
-      }
-      setPath(state, control.dataset.bind, value);
-    }
-
-    function replaceState(next) {
-      const merged = deepMerge(DEFAULT_CONFIG, next || {});
-      for (const key of Object.keys(state)) delete state[key];
-      Object.assign(state, merged);
-    }
-
-    function getPath(object, path) {
-      return path.split(".").reduce((cursor, key) => cursor?.[key], object);
-    }
-
-    function setPath(object, path, value) {
-      const parts = path.split(".");
-      let cursor = object;
-      for (const key of parts.slice(0, -1)) {
-        cursor[key] = cursor[key] || {};
-        cursor = cursor[key];
-      }
-      cursor[parts.at(-1)] = value;
-    }
-
-    function deepMerge(base, override) {
-      const output = Array.isArray(base) ? [...base] : { ...base };
-      if (!override || typeof override !== "object") return output;
-      for (const [key, value] of Object.entries(override)) {
-        if (Array.isArray(value)) {
-          output[key] = [...value];
-        } else if (value && typeof value === "object") {
-          output[key] = deepMerge(output[key] && typeof output[key] === "object" ? output[key] : {}, value);
-        } else {
-          output[key] = value;
-        }
-      }
-      return output;
-    }
-
-    function isoToDatetimeLocalValue(value) {
-      if (!value) return "";
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return "";
-      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-      return local.toISOString().slice(0, 16);
-    }
-
-    function datetimeLocalToIso(value) {
-      if (!value) return "";
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return "";
-      return toIsoWithOffset(date);
-    }
-
-    function toIsoWithOffset(date) {
-      const pad = (num) => String(num).padStart(2, "0");
-      const year = date.getFullYear();
-      const month = pad(date.getMonth() + 1);
-      const day = pad(date.getDate());
-      const hours = pad(date.getHours());
-      const minutes = pad(date.getMinutes());
-      const seconds = pad(date.getSeconds());
-      const offsetMinutes = -date.getTimezoneOffset();
-      const sign = offsetMinutes >= 0 ? "+" : "-";
-      const abs = Math.abs(offsetMinutes);
-      const offsetHours = pad(Math.floor(abs / 60));
-      const offsetMins = pad(abs % 60);
-      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${sign}${offsetHours}:${offsetMins}`;
-    }
-
-    function describeLocalDateTime(value) {
-      if (!value) return "Selecciona cuándo debe iniciar la ventana.";
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return "Fecha inválida.";
-      const formatter = new Intl.DateTimeFormat("es-MX", {
-        dateStyle: "full",
-        timeStyle: "short"
-      });
-      return formatter.format(date);
-    }
-
-    function setStatus(message, tone = "ok") {
-      refs.status.className = `status ${tone === "warn" ? "warn" : tone === "loading" ? "loading" : ""}`;
-      refs.status.innerHTML = `<span class="dot"></span><span>${escapeHtml(message)}</span>`;
-    }
-
-    function truncate(value, max) {
-      const input = String(value || "—");
-      return input.length > max ? `${input.slice(0, max - 1)}…` : input;
-    }
-
-    function clone(value) {
-      return typeof structuredClone === "function" ? structuredClone(value) : JSON.parse(JSON.stringify(value));
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
+    function readControls() { document.querySelectorAll("[data-bind]").forEach(writeControl); }
+    function syncControls() { document.querySelectorAll("[data-bind]").forEach((control) => { const value = getPath(state, control.dataset.bind); if (control.type === "checkbox") control.checked = Boolean(value); else control.value = value ?? ""; }); }
+    function writeControl(control) { let value = control.type === "checkbox" ? control.checked : control.value; if (control.type === "number") value = Number(value); setPath(state, control.dataset.bind, value); }
+    function getPath(obj, path) { return path.split(".").reduce((cursor, key) => cursor?.[key], obj); }
+    function setPath(obj, path, value) { const parts = path.split("."); let cursor = obj; for (const key of parts.slice(0,-1)) { cursor[key] = cursor[key] || {}; cursor = cursor[key]; } cursor[parts.at(-1)] = value; }
+    function replaceState(next) { const merged = deepMerge(DEFAULT_CONFIG, next || {}); for (const key of Object.keys(state)) delete state[key]; Object.assign(state, merged); }
+    function deepMerge(base, override) { const output = Array.isArray(base) ? [...base] : { ...base }; if (!override || typeof override !== "object") return output; for (const [key, value] of Object.entries(override)) { if (Array.isArray(value)) output[key] = [...value]; else if (value && typeof value === "object") output[key] = deepMerge(output[key] && typeof output[key] === "object" ? output[key] : {}, value); else output[key] = value; } return output; }
+    function ensureDefaults() { state.maintenance = state.maintenance || {}; state.maintenance.title ||= "Mantenimiento programado"; state.maintenance.message ||= DEFAULT_MESSAGE; state.maintenance.severity ||= "planned"; state.maintenance.targetAt ||= toIsoWithOffset(new Date(Date.now()+15*60_000)); ensureInjectionConfig(); ensureIsvConfig(); }
+    function ensureInjectionConfig() { state.injection = state.injection || {}; state.injection.excludeHostnamesExact = Array.isArray(state.injection.excludeHostnamesExact) ? state.injection.excludeHostnamesExact : []; }
+    function ensureIsvConfig() { state.campaigns = state.campaigns || {}; state.campaigns.isv = state.campaigns.isv || {}; }
+    function parseHostList(v) { return String(v || "").split(/[\n,]/).map(normalizeHost).filter(Boolean); }
+    function normalizeHost(v) { return String(v || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, ""); }
+    function formatHostList(v) { return Array.isArray(v) ? v.join("\n") : ""; }
+    function maintenanceStateText() { const d = new Date(state.maintenance.targetAt || ""); if (Number.isNaN(d.getTime())) return "Sin fecha"; return countdownTo(d); }
+    function countdownTo(d) { const diff = d.getTime() - Date.now(); if (diff <= 0) return "Activa ahora"; const m = Math.round(diff/60000); if (m < 60) return `En ${m} min`; const h = Math.floor(m/60); const r = m%60; return r ? `En ${h}h ${r}m` : `En ${h}h`; }
+    function toIsoWithOffset(date) { const pad = (n) => String(n).padStart(2,"0"); const off = -date.getTimezoneOffset(); const sign = off >= 0 ? "+" : "-"; const abs = Math.abs(off); return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${sign}${pad(Math.floor(abs/60))}:${pad(abs%60)}`; }
+    function dateInput(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+    function timeInput(d) { return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
+    function todayInTimeZone(timeZone) { const parts = new Intl.DateTimeFormat("en-CA", { timeZone, year:"numeric", month:"2-digit", day:"2-digit" }).formatToParts(new Date()); const m = Object.fromEntries(parts.map(p => [p.type,p.value])); return `${m.year}-${m.month}-${m.day}`; }
+    function clone(v) { return typeof structuredClone === "function" ? structuredClone(v) : JSON.parse(JSON.stringify(v)); }
+    function escapeHtml(v) { return String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
   </script>
 </body>
 </html>
