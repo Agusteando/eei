@@ -1,13 +1,14 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v14";
+const EEI_ASSET_VERSION = "2026-07-01-v15";
 const ISV_DEFAULT_SCRIPT_URL = "https://isv-ev2.pages.dev/isv-banner.js";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
+const SIGNIA_DEFAULT_PLANTELES_URL = "https://signia.casitaapps.com/api/planteles/list";
 const FOOTBALL_DATA_DEFAULT_BASE_URL = "https://api.football-data.org/v4";
 const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 12,
+  version: 15,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -36,6 +37,7 @@ const DEFAULT_CONFIG = {
     enabled: true,
     mode: "api",
     apiUrl: "/__eei/signia-birthdays",
+    plantelesApiUrl: "/__eei/signia-planteles",
     timezone: "America/Mexico_City",
     showOncePerDay: true,
     toastDurationMs: 9500,
@@ -98,6 +100,10 @@ export default {
 
     if (url.pathname === "/__eei/signia-birthdays") {
       return handleSigniaBirthdays(request, env);
+    }
+
+    if (url.pathname === "/__eei/signia-planteles") {
+      return handleSigniaPlanteles(request, env);
     }
 
     if (url.pathname === "/__eei/worldcup-matches") {
@@ -296,6 +302,89 @@ async function handleSigniaBirthdays(request, env) {
     birthdays: [],
     error: "Could not fetch Signia birthdays",
     providerUrl: lastAttempt.url || endpoints[0] || SIGNIA_DEFAULT_URL,
+    providerStatus: lastAttempt.status || 0,
+    ...(debug ? { debug: { provider: "signia", attempts } } : {})
+  }, {
+    "Cache-Control": "no-store"
+  }, 502);
+}
+
+
+async function handleSigniaPlanteles(request, env) {
+  const debug = new URL(request.url).searchParams.get("debug") === "1";
+  const endpoints = uniqueNonEmpty([
+    env.SIGNIA_PLANTELES_URL,
+    SIGNIA_DEFAULT_PLANTELES_URL
+  ]);
+  const attempts = [];
+
+  for (const endpoint of endpoints) {
+    try {
+      const upstream = await fetch(endpoint, {
+        headers: {
+          Accept: "application/json"
+        },
+        cf: debug ? undefined : {
+          cacheTtl: 3600,
+          cacheEverything: true
+        }
+      });
+
+      const contentType = upstream.headers.get("Content-Type") || "";
+      const bodyText = await upstream.text();
+      let payload = null;
+      if (bodyText) {
+        try {
+          payload = JSON.parse(bodyText);
+        } catch {
+          payload = null;
+        }
+      }
+
+      attempts.push(cleanDebugAttempt({
+        url: endpoint,
+        ok: upstream.ok,
+        status: upstream.status,
+        contentType,
+        bodyPreview: debug && !upstream.ok ? bodyText.slice(0, 500) : undefined
+      }));
+
+      if (!upstream.ok) {
+        continue;
+      }
+
+      const planteles = normalizePlantelesPayload(payload);
+      return json({
+        count: planteles.length,
+        planteles,
+        ...(debug ? {
+          debug: {
+            provider: "signia",
+            providerUrl: endpoint,
+            providerStatus: upstream.status,
+            attempts,
+            raw: payload
+          }
+        } : {})
+      }, {
+        "Cache-Control": debug ? "no-store" : "public, max-age=3600"
+      });
+    } catch (error) {
+      attempts.push(cleanDebugAttempt({
+        url: endpoint,
+        ok: false,
+        status: 0,
+        error: String(error && error.message ? error.message : error)
+      }));
+    }
+  }
+
+  const lastAttempt = attempts[attempts.length - 1] || {};
+  return json({
+    count: 0,
+    planteles: [],
+    error: "Could not fetch Signia planteles",
+    providerUrl: lastAttempt.url || endpoints[0] || SIGNIA_DEFAULT_PLANTELES_URL,
     providerStatus: lastAttempt.status || 0,
     ...(debug ? { debug: { provider: "signia", attempts } } : {})
   }, {
@@ -630,7 +719,7 @@ function deepMerge(base, override) {
 function normalizeRuntimeConfig(config) {
   const output = structuredClone(config);
   const storedVersion = Number(output.version || 0);
-  output.version = Math.max(8, storedVersion || 0);
+  output.version = Math.max(15, storedVersion || 0);
 
   if (!output.injection || typeof output.injection !== "object") {
     output.injection = structuredClone(DEFAULT_CONFIG.injection);
@@ -681,10 +770,41 @@ function normalizeRuntimeConfig(config) {
       output.festivities.mundial_2026.ballDrag = true;
     }
   }
-  if (output?.birthday && !Array.isArray(output.birthday.mockBirthdays)) {
-    output.birthday.mockBirthdays = [];
+  if (output?.birthday) {
+    if (!output.birthday.apiUrl) {
+      output.birthday.apiUrl = "/__eei/signia-birthdays";
+    }
+    if (!output.birthday.plantelesApiUrl) {
+      output.birthday.plantelesApiUrl = "/__eei/signia-planteles";
+    }
+    if (!Array.isArray(output.birthday.mockBirthdays)) {
+      output.birthday.mockBirthdays = [];
+    }
   }
   return output;
+}
+
+
+function normalizePlantelesPayload(payload) {
+  const sourceList = Array.isArray(payload)
+    ? payload
+    : findFirstArray(payload, ["planteles", "campuses", "schools", "data", "results", "items"]) || [];
+
+  const map = new Map();
+  for (const item of sourceList) {
+    const plantel = normalizePlantelEntity(item, item?.id ?? item?.plantelId ?? item?.value ?? "", item?.name || item?.nombre || item?.label || item?.displayName || "");
+    if (plantel && plantelKey(plantel) && !map.has(plantelKey(plantel))) {
+      map.set(plantelKey(plantel), {
+        id: plantel.id || "",
+        name: plantel.name || plantel.label || "Plantel",
+        label: plantel.label || plantel.name || "Plantel",
+        displayName: plantel.label || plantel.name || "Plantel",
+        key: plantelKey(plantel)
+      });
+    }
+  }
+
+  return [...map.values()].sort((a, b) => String(a.displayName || a.name).localeCompare(String(b.displayName || b.name), "es"));
 }
 
 function normalizeBirthdayPayload(payload, timeZone) {
@@ -696,11 +816,14 @@ function normalizeBirthdayPayload(payload, timeZone) {
     .filter((person) => birthdayEntryMatchesToday(person, date))
     .map(normalizeBirthdayPerson);
 
+  const planteles = normalizePlantelesPayload(payload);
+
   return {
     date,
     timezone: timeZone,
     count: birthdays.length,
-    birthdays
+    birthdays,
+    planteles
   };
 }
 

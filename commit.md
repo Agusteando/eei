@@ -1,1 +1,1 @@
-Rediseña EEI Admin como Command Center mobile-first para mantenimiento de emergencia
+Usa API pública de planteles de Signia y suaviza preferencias de cumpleaños

@@ -1,11 +1,11 @@
 import * as THREE from "./vendor/three.module.js";
 
-const EEI_VERSION = "0.14.0";
+const EEI_VERSION = "0.15.0";
 const MAX_Z_INDEX = "2147483647";
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
 export const DEFAULT_CONFIG = {
-  version: 14,
+  version: 15,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -34,6 +34,7 @@ export const DEFAULT_CONFIG = {
     enabled: true,
     mode: "api",
     apiUrl: "/__eei/signia-birthdays",
+    plantelesApiUrl: "/__eei/signia-planteles",
     timezone: DEFAULT_TIMEZONE,
     showOncePerDay: true,
     toastDurationMs: 9500,
@@ -739,13 +740,20 @@ class BirthdayModule {
     }
 
     const allBirthdays = Array.isArray(data.birthdays) ? data.birthdays.map(normalizeBirthdayRecord) : [];
+    const allPlanteles = await this.loadAllPlanteles(data);
+
+    if (allPlanteles.length) {
+      writeKnownBirthdayPlanteles(mergePlantelLists(readKnownBirthdayPlanteles(), allPlanteles).slice(0, 120));
+    }
+
     if (allBirthdays.length === 0) {
       return;
     }
 
     this.rememberKnownPlanteles(allBirthdays);
+    const plantelesForPreferences = mergePlantelLists(allPlanteles, readKnownBirthdayPlanteles(), listUniquePlanteles(allBirthdays)).slice(0, 120);
     const birthdays = this.filterBySubscribedPlanteles(allBirthdays);
-    this.showPlantelSubscriptionPrompt(allBirthdays, config);
+    this.showPlantelSubscriptionPrompt(plantelesForPreferences, config);
 
     if (birthdays.length === 0) {
       return;
@@ -823,6 +831,36 @@ class BirthdayModule {
     }
   }
 
+  async loadAllPlanteles(data = {}) {
+    const fromBirthdayPayload = Array.isArray(data.planteles) ? data.planteles : [];
+    const known = readKnownBirthdayPlanteles();
+
+    if (this.config.mode === "mock") {
+      return mergePlantelLists(fromBirthdayPayload, known);
+    }
+
+    const apiUrl = this.config.plantelesApiUrl || DEFAULT_CONFIG.birthday.plantelesApiUrl;
+    if (!apiUrl) {
+      return mergePlantelLists(fromBirthdayPayload, known);
+    }
+
+    try {
+      const response = await fetch(apiUrl, {
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      });
+      if (!response.ok) {
+        return mergePlantelLists(fromBirthdayPayload, known);
+      }
+      const payload = await response.json();
+      const source = Array.isArray(payload) ? payload : Array.isArray(payload?.planteles) ? payload.planteles : [];
+      return mergePlantelLists(source, fromBirthdayPayload, known);
+    } catch {
+      return mergePlantelLists(fromBirthdayPayload, known);
+    }
+  }
+
   filterBySubscribedPlanteles(birthdays) {
     const preference = readBirthdayPlantelPreference();
     if (preference.mode !== "custom") {
@@ -851,17 +889,16 @@ class BirthdayModule {
     writeKnownBirthdayPlanteles(merged);
   }
 
-  showPlantelSubscriptionPrompt(birthdays, config = {}) {
+  showPlantelSubscriptionPrompt(planteles, config = {}) {
     if (config.subscriptionPrompt === false) {
       return;
     }
 
-    const currentPlanteles = listUniquePlanteles(birthdays);
-    if (currentPlanteles.length === 0) {
+    const availablePlanteles = mergePlantelLists(planteles, readKnownBirthdayPlanteles()).slice(0, 120);
+    if (availablePlanteles.length === 0 || hasDismissedBirthdayPlantelPrompt()) {
       return;
     }
 
-    const knownPlanteles = mergePlantelLists(readKnownBirthdayPlanteles(), currentPlanteles).slice(0, 60);
     const existing = this.engine.uiLayer.querySelector("[data-eei-widget='birthday-planteles']");
     existing?.remove();
 
@@ -869,17 +906,21 @@ class BirthdayModule {
     card.className = "eei-birthday-plantel-card";
     card.dataset.eeiWidget = "birthday-planteles";
     card.innerHTML = `
-      <img src="${escapeAttribute(this.engine.assetUrl("ambassadors", "birthday"))}" alt="" loading="eager">
-      <div>
-        <p>Recibir notificaciones de cumpleaños de plantel${currentPlanteles.length > 1 ? "es" : ""}</p>
-        <strong>(${escapeHtml(currentPlanteles.map((plantel) => plantel.name).join(", "))})</strong>
-        <button type="button">Elegir planteles</button>
-      </div>
+      <button class="eei-birthday-plantel-open" type="button" aria-label="Preferencias de cumpleaños">
+        <img src="${escapeAttribute(this.engine.assetUrl("ambassadors", "birthday"))}" alt="" loading="eager">
+        <span>Cumples</span>
+      </button>
+      <button class="eei-birthday-plantel-dismiss" type="button" aria-label="Cerrar">×</button>
     `;
 
-    card.querySelector("button")?.addEventListener("click", (event) => {
+    card.querySelector(".eei-birthday-plantel-open")?.addEventListener("click", (event) => {
       event.preventDefault();
-      this.openPlantelSubscriptionModal(knownPlanteles);
+      this.openPlantelSubscriptionModal(availablePlanteles);
+    });
+    card.querySelector(".eei-birthday-plantel-dismiss")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      dismissBirthdayPlantelPrompt();
+      card.remove();
     });
 
     this.engine.uiLayer.appendChild(card);
@@ -899,8 +940,8 @@ class BirthdayModule {
     modal.innerHTML = `
       <div class="eei-birthday-plantel-dialog" role="dialog" aria-modal="true" aria-label="Notificaciones de cumpleaños por plantel">
         <button class="eei-modal-close" type="button" aria-label="Cerrar">×</button>
-        <h2>Cumpleaños por plantel</h2>
-        <p>Elige los planteles de los que quieres recibir cumpleaños. Por defecto están todos activos.</p>
+        <h2>Planteles</h2>
+        <p>Todos activos por defecto.</p>
         <div class="eei-birthday-plantel-list">
           ${planteles.map((plantel) => `
             <label>
@@ -911,6 +952,7 @@ class BirthdayModule {
         </div>
         <div class="eei-birthday-plantel-actions">
           <button type="button" data-action="all">Todos</button>
+          <button type="button" data-action="none">Ninguno</button>
           <button type="button" data-action="save">Guardar</button>
         </div>
       </div>
@@ -925,6 +967,10 @@ class BirthdayModule {
     });
     modal.querySelector("[data-action='all']")?.addEventListener("click", () => {
       writeBirthdayPlantelPreference({ mode: "all", selected: [], updatedAt: new Date().toISOString() });
+      close();
+    });
+    modal.querySelector("[data-action='none']")?.addEventListener("click", () => {
+      writeBirthdayPlantelPreference({ mode: "custom", selected: [], updatedAt: new Date().toISOString() });
       close();
     });
     modal.querySelector("[data-action='save']")?.addEventListener("click", () => {
@@ -2107,6 +2153,20 @@ function mergePlantelLists(...lists) {
   return [...map.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), "es"));
 }
 
+const BIRTHDAY_PLANTEL_DISMISSED_KEY = "eei:birthday:planteles-dismissed:v1";
+
+function birthdayPromptDismissKey() {
+  return `${BIRTHDAY_PLANTEL_DISMISSED_KEY}:${todayInTimeZone(DEFAULT_TIMEZONE)}`;
+}
+
+function hasDismissedBirthdayPlantelPrompt() {
+  return safeLocalStorageGet(birthdayPromptDismissKey()) === "1";
+}
+
+function dismissBirthdayPlantelPrompt() {
+  safeLocalStorageSet(birthdayPromptDismissKey(), "1");
+}
+
 const BIRTHDAY_PLANTEL_PREF_KEY = "eei:birthday:planteles:v1";
 const BIRTHDAY_PLANTEL_KNOWN_KEY = "eei:birthday:known-planteles:v1";
 const BIRTHDAY_PLANTEL_PREF_COOKIE = "eei_bday_planteles";
@@ -2436,69 +2496,63 @@ function overlayCss() {
     }
 
     .eei-birthday-plantel-card {
-      position: absolute;
-      right: max(14px, env(safe-area-inset-right));
-      bottom: max(132px, calc(env(safe-area-inset-bottom) + 132px));
-      width: min(360px, calc(100vw - 28px));
-      display: grid;
-      grid-template-columns: 66px minmax(0, 1fr);
-      gap: 12px;
-      align-items: center;
-      padding: 10px 12px 10px 9px;
-      border: 1px solid rgba(15, 23, 42, 0.12);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
-      -webkit-backdrop-filter: blur(18px);
-      backdrop-filter: blur(18px);
-      color: #0f172a;
+      position: fixed;
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(12px, env(safe-area-inset-bottom));
+      z-index: 4;
       pointer-events: auto;
-      animation: eei-toast-in 360ms cubic-bezier(.2,.8,.2,1) both;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid rgba(20, 32, 31, 0.12);
+      box-shadow: 0 18px 44px rgba(20, 32, 31, 0.14);
+      backdrop-filter: blur(18px);
+      animation: eei-soft-rise 280ms ease both;
     }
 
-    .eei-birthday-plantel-card img {
-      width: 66px;
-      height: 66px;
-      object-fit: contain;
-    }
-
-    .eei-birthday-plantel-card p {
-      margin: 0;
-      font-size: 12px;
-      line-height: 1.25;
-      color: rgba(15, 23, 42, 0.72);
-      font-weight: 700;
-    }
-
-    .eei-birthday-plantel-card strong {
-      display: block;
-      margin-top: 3px;
-      font-size: 13px;
-      line-height: 1.25;
-      color: #0f172a;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .eei-birthday-plantel-card button,
-    .eei-birthday-plantel-actions button,
-    .eei-modal-close {
+    .eei-birthday-plantel-open,
+    .eei-birthday-plantel-dismiss {
+      pointer-events: auto;
+      border: 0;
+      cursor: pointer;
       font: inherit;
     }
 
-    .eei-birthday-plantel-card button {
-      margin-top: 8px;
-      min-height: 30px;
-      border: 0;
+    .eei-birthday-plantel-open {
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px 4px 4px;
       border-radius: 999px;
-      padding: 0 12px;
-      background: #0f172a;
-      color: white;
+      background: transparent;
+      color: #14312c;
       font-size: 12px;
-      font-weight: 800;
-      cursor: pointer;
-      pointer-events: auto;
+      font-weight: 900;
+    }
+
+    .eei-birthday-plantel-open img {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .eei-birthday-plantel-dismiss {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: rgba(20, 32, 31, 0.06);
+      color: rgba(20, 32, 31, 0.7);
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 900;
     }
 
     .eei-birthday-plantel-modal {

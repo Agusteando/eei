@@ -206,9 +206,11 @@
           <div class="card-head"><h2>Salud</h2><span class="mini-chip" id="healthChip">—</span></div>
           <div class="body health-list">
             <div class="row"><div><strong>Cumpleaños</strong><span id="birthdayEndpoint">Signia</span></div><button class="mini-chip" id="birthdayStatus">Probar</button></div>
+            <div class="row"><div><strong>Planteles</strong><span id="plantelesEndpoint">Signia</span></div><button class="mini-chip" id="plantelesStatus">Probar</button></div>
             <div class="row"><div><strong>Mundial</strong><span id="mundialEndpoint">Football</span></div><button class="mini-chip" id="mundialStatus">Probar</button></div>
             <div class="actions">
               <button class="btn secondary" type="button" id="debugBirthdayBtn">Cumples</button>
+              <button class="btn secondary" type="button" id="debugPlantelesBtn">Planteles</button>
               <button class="btn secondary" type="button" id="debugMundialBtn">Mundial</button>
             </div>
           </div>
@@ -255,6 +257,8 @@
             <summary>Avanzado</summary>
             <div class="body advanced-grid">
               <div class="field"><div class="label">Modo cumpleaños</div><select data-bind="birthday.mode"><option value="api">api</option><option value="mock">mock</option></select></div>
+              <div class="field"><div class="label">Cumples API</div><input data-bind="birthday.apiUrl"></div>
+              <div class="field"><div class="label">Planteles API</div><input data-bind="birthday.plantelesApiUrl"></div>
               <div class="field"><div class="label">Equipo Mundial</div><input data-bind="festivities.mundial_2026.priorityTeam"></div>
               <div class="field"><div class="label">Duración fuegos</div><input type="number" min="2500" step="500" data-bind="festivities.new_year.durationMs"></div>
               <div class="field"><div class="label">Mundial API</div><input data-bind="festivities.mundial_2026.sportsApiUrl"></div>
@@ -280,7 +284,7 @@
   <dialog id="hostsDialog"><div class="sheet-head"><h3>Hosts</h3><button class="mini-chip" data-close-dialog>×</button></div><div class="sheet-body"><div class="host-list" id="hostsList"></div><div class="two"><input id="newHostInput" placeholder="subdominio.dominio.com"><button class="btn" id="addHostBtn" type="button">Agregar</button></div><button class="btn secondary" data-close-dialog type="button">Listo</button></div></dialog>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v14";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v15";
 
     const TOKEN_STORAGE_KEY = "eei:adminToken";
     const REMEMBER_STORAGE_KEY = "eei:rememberToken";
@@ -297,7 +301,7 @@
       globalChip: $("globalChip"), dirtyChip: $("dirtyChip"), quotaChip: $("quotaChip"), lastSaved: $("lastSaved"), maintChip: $("maintChip"),
       message: $("maintenanceMessage"), messageCount: $("messageCount"), noticeSeverity: $("noticeSeverity"), noticeTitle: $("noticeTitle"), noticeMessage: $("noticeMessage"), noticeTime: $("noticeTime"),
       activateMaintenanceBtn: $("activateMaintenanceBtn"), disableMaintenanceBtn: $("disableMaintenanceBtn"), previewMaintenanceBtn: $("previewMaintenanceBtn"), openScheduleBtn: $("openScheduleBtn"),
-      debugBirthdayBtn: $("debugBirthdayBtn"), debugMundialBtn: $("debugMundialBtn"), birthdayStatus: $("birthdayStatus"), mundialStatus: $("mundialStatus"), birthdayEndpoint: $("birthdayEndpoint"), mundialEndpoint: $("mundialEndpoint"), healthChip: $("healthChip"),
+      debugBirthdayBtn: $("debugBirthdayBtn"), debugPlantelesBtn: $("debugPlantelesBtn"), debugMundialBtn: $("debugMundialBtn"), birthdayStatus: $("birthdayStatus"), plantelesStatus: $("plantelesStatus"), mundialStatus: $("mundialStatus"), birthdayEndpoint: $("birthdayEndpoint"), plantelesEndpoint: $("plantelesEndpoint"), mundialEndpoint: $("mundialEndpoint"), healthChip: $("healthChip"),
       hostCount: $("hostCount"), hostMode: $("hostMode"), openHostsBtn: $("openHostsBtn"), hostsList: $("hostsList"), newHostInput: $("newHostInput"), addHostBtn: $("addHostBtn"),
       moduleCount: $("moduleCount"), previewBirthdayBtn: $("previewBirthdayBtn"), previewMundialBtn: $("previewMundialBtn"),
       loadBtn: $("loadBtn"), saveBtn: $("saveBtn"), openTokenBtn: $("openTokenBtn"), adminToken: $("adminToken"), rememberToken: $("rememberToken"), saveTokenBtn: $("saveTokenBtn"), forgetTokenBtn: $("forgetTokenBtn"),
@@ -333,8 +337,10 @@
       refs.useScheduleBtn.addEventListener("click", useSchedule);
 
       refs.debugBirthdayBtn.addEventListener("click", () => debugApi("birthday"));
+      refs.debugPlantelesBtn.addEventListener("click", () => debugApi("planteles"));
       refs.debugMundialBtn.addEventListener("click", () => debugApi("mundial"));
       refs.birthdayStatus.addEventListener("click", () => showRaw("birthday"));
+      refs.plantelesStatus.addEventListener("click", () => showRaw("planteles"));
       refs.mundialStatus.addEventListener("click", () => showRaw("mundial"));
       refs.copyRawBtn.addEventListener("click", () => navigator.clipboard?.writeText(refs.rawOutput.textContent || ""));
       refs.previewBirthdayBtn.addEventListener("click", previewBirthday);
@@ -484,7 +490,11 @@
     }
 
     async function debugApi(kind) {
-      const endpoint = kind === "birthday" ? "/__eei/signia-birthdays?debug=1" : `/__eei/worldcup-matches?debug=1&date=${todayInTimeZone("America/Mexico_City")}`;
+      const endpoint = kind === "birthday"
+        ? "/__eei/signia-birthdays?debug=1"
+        : kind === "planteles"
+          ? "/__eei/signia-planteles?debug=1"
+          : `/__eei/worldcup-matches?debug=1&date=${todayInTimeZone("America/Mexico_City")}`;
       setApiState(kind, "…", "warn", endpoint);
       try {
         const response = await fetch(endpoint, { cache: "no-store", credentials: "same-origin", headers: { Accept: "application/json" } });
@@ -502,15 +512,15 @@
     }
 
     function setApiState(kind, label, tone, endpoint) {
-      const el = kind === "birthday" ? refs.birthdayStatus : refs.mundialStatus;
-      const endpointEl = kind === "birthday" ? refs.birthdayEndpoint : refs.mundialEndpoint;
+      const el = kind === "birthday" ? refs.birthdayStatus : kind === "planteles" ? refs.plantelesStatus : refs.mundialStatus;
+      const endpointEl = kind === "birthday" ? refs.birthdayEndpoint : kind === "planteles" ? refs.plantelesEndpoint : refs.mundialEndpoint;
       el.textContent = label;
       el.className = `mini-chip ${tone}`;
       endpointEl.textContent = endpoint;
     }
 
     function renderHealth() {
-      const values = [rawPayload.birthday, rawPayload.mundial].filter(Boolean);
+      const values = [rawPayload.birthday, rawPayload.planteles, rawPayload.mundial].filter(Boolean);
       if (!values.length) { refs.healthChip.textContent = "—"; refs.healthChip.className = "mini-chip"; return; }
       const ok = values.filter((v) => v.ok).length;
       refs.healthChip.textContent = `${ok}/${values.length}`;
@@ -520,7 +530,7 @@
     function showRaw(kind) {
       const payload = rawPayload[kind];
       if (!payload) return;
-      refs.rawTitle.textContent = kind === "birthday" ? "Cumpleaños" : "Mundial";
+      refs.rawTitle.textContent = kind === "birthday" ? "Cumpleaños" : kind === "planteles" ? "Planteles" : "Mundial";
       refs.rawOutput.textContent = JSON.stringify(payload, null, 2);
       refs.rawDialog.showModal();
     }
