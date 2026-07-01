@@ -1,1 +1,1 @@
-Rediseña admin con Font Awesome, carga de config no-cache y etiquetas avanzadas claras
+Rebuild EEI admin as coherent product system v20

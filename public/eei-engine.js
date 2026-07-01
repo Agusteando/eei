@@ -1,11 +1,11 @@
 import * as THREE from "./vendor/three.module.js";
 
-const EEI_VERSION = "0.19.0";
+const EEI_VERSION = "0.20.0";
 const MAX_Z_INDEX = "2147483647";
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
 export const DEFAULT_CONFIG = {
-  version: 19,
+  version: 20,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
