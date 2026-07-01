@@ -1,7 +1,12 @@
-# EEI Command Center v15
+# EEI Command Center v16
 
-- Adds `/__eei/signia-planteles` proxy to Signia public `GET /api/planteles/list`.
-- Birthday plantel preferences now use the full Signia plantel catalog, not only planteles returned by today birthdays.
-- Birthday preference UI is a small non-intrusive bottom chip with a close button.
-- Modal keeps all planteles selected by default and supports all/none/custom selection.
-- Keeps EEI existing config contracts and birthday route behavior.
+- Reworked admin UI with reference-inspired visual direction while keeping only existing EEI logic.
+- No stubs, no Cloudflare usage placeholder, no raw timestamp in main flow.
+- Added Planteles panel backed by `/__eei/signia-planteles`.
+- Maintenance activate/deactivate now autosaves when Admin Key is available.
+- Birthday plantel selector now uses all Signia planteles and is a discreet chip with a close button.
+- Dismissed birthday plantel chip stays hidden for 7 days.
+
+Open after deploy:
+
+`/eei-admin.html?v=2026-07-01-v16`

@@ -1,5 +1,5 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v15";
+const EEI_ASSET_VERSION = "2026-07-01-v16";
 const ISV_DEFAULT_SCRIPT_URL = "https://isv-ev2.pages.dev/isv-banner.js";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const SIGNIA_DEFAULT_PLANTELES_URL = "https://signia.casitaapps.com/api/planteles/list";
@@ -8,7 +8,7 @@ const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 15,
+  version: 16,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {

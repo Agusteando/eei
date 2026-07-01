@@ -1,11 +1,11 @@
 import * as THREE from "./vendor/three.module.js";
 
-const EEI_VERSION = "0.15.0";
+const EEI_VERSION = "0.16.0";
 const MAX_Z_INDEX = "2147483647";
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
 export const DEFAULT_CONFIG = {
-  version: 15,
+  version: 16,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -906,9 +906,9 @@ class BirthdayModule {
     card.className = "eei-birthday-plantel-card";
     card.dataset.eeiWidget = "birthday-planteles";
     card.innerHTML = `
-      <button class="eei-birthday-plantel-open" type="button" aria-label="Preferencias de cumpleaños">
-        <img src="${escapeAttribute(this.engine.assetUrl("ambassadors", "birthday"))}" alt="" loading="eager">
-        <span>Cumples</span>
+      <button class="eei-birthday-plantel-open" type="button" aria-label="Cumpleaños por plantel">
+        <span class="eei-birthday-plantel-glyph" aria-hidden="true">🎂</span>
+        <span class="eei-birthday-plantel-label">Planteles</span>
       </button>
       <button class="eei-birthday-plantel-dismiss" type="button" aria-label="Cerrar">×</button>
     `;
@@ -938,10 +938,10 @@ class BirthdayModule {
     modal.className = "eei-birthday-plantel-modal";
     modal.dataset.eeiModal = "birthday-planteles";
     modal.innerHTML = `
-      <div class="eei-birthday-plantel-dialog" role="dialog" aria-modal="true" aria-label="Notificaciones de cumpleaños por plantel">
+      <div class="eei-birthday-plantel-dialog" role="dialog" aria-modal="true" aria-label="Cumpleaños por plantel">
         <button class="eei-modal-close" type="button" aria-label="Cerrar">×</button>
-        <h2>Planteles</h2>
-        <p>Todos activos por defecto.</p>
+        <h2>Cumples por plantel</h2>
+        <input class="eei-birthday-plantel-search" type="search" placeholder="Buscar plantel" autocomplete="off">
         <div class="eei-birthday-plantel-list">
           ${planteles.map((plantel) => `
             <label>
@@ -959,6 +959,13 @@ class BirthdayModule {
     `;
 
     const close = () => modal.remove();
+    const search = modal.querySelector(".eei-birthday-plantel-search");
+    search?.addEventListener("input", () => {
+      const query = String(search.value || "").trim().toLowerCase();
+      modal.querySelectorAll(".eei-birthday-plantel-list label").forEach((label) => {
+        label.hidden = query && !label.textContent.toLowerCase().includes(query);
+      });
+    });
     modal.querySelector(".eei-modal-close")?.addEventListener("click", close);
     modal.addEventListener("click", (event) => {
       if (event.target === modal) {
@@ -2153,18 +2160,16 @@ function mergePlantelLists(...lists) {
   return [...map.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), "es"));
 }
 
-const BIRTHDAY_PLANTEL_DISMISSED_KEY = "eei:birthday:planteles-dismissed:v1";
-
-function birthdayPromptDismissKey() {
-  return `${BIRTHDAY_PLANTEL_DISMISSED_KEY}:${todayInTimeZone(DEFAULT_TIMEZONE)}`;
-}
+const BIRTHDAY_PLANTEL_DISMISSED_KEY = "eei:birthday:planteles-dismissed-until:v2";
+const BIRTHDAY_PLANTEL_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
 
 function hasDismissedBirthdayPlantelPrompt() {
-  return safeLocalStorageGet(birthdayPromptDismissKey()) === "1";
+  const until = Number(safeLocalStorageGet(BIRTHDAY_PLANTEL_DISMISSED_KEY) || 0);
+  return Number.isFinite(until) && until > Date.now();
 }
 
 function dismissBirthdayPlantelPrompt() {
-  safeLocalStorageSet(birthdayPromptDismissKey(), "1");
+  safeLocalStorageSet(BIRTHDAY_PLANTEL_DISMISSED_KEY, String(Date.now() + BIRTHDAY_PLANTEL_DISMISS_MS));
 }
 
 const BIRTHDAY_PLANTEL_PREF_KEY = "eei:birthday:planteles:v1";
@@ -2655,6 +2660,161 @@ function overlayCss() {
     .eei-birthday-plantel-actions [data-action="save"] {
       background: #0f172a;
       color: white;
+    }
+
+
+    .eei-birthday-plantel-card {
+      right: max(10px, env(safe-area-inset-right));
+      bottom: max(10px, env(safe-area-inset-bottom));
+      gap: 2px;
+      padding: 3px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(9, 45, 42, 0.1);
+      box-shadow: 0 14px 34px rgba(9, 45, 42, 0.12);
+      opacity: 0.92;
+      transform: translateZ(0);
+    }
+
+    .eei-birthday-plantel-card:hover,
+    .eei-birthday-plantel-card:focus-within {
+      opacity: 1;
+    }
+
+    .eei-birthday-plantel-open {
+      min-height: 34px;
+      padding: 3px 9px 3px 3px;
+      gap: 7px;
+      color: #063f3a;
+      font-size: 11px;
+      letter-spacing: -0.01em;
+    }
+
+    .eei-birthday-plantel-glyph {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(9, 117, 109, 0.14), rgba(9, 117, 109, 0.08));
+      font-size: 15px;
+    }
+
+    .eei-birthday-plantel-label {
+      display: inline-block;
+      max-width: 70px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .eei-birthday-plantel-dismiss {
+      width: 26px;
+      height: 26px;
+      background: rgba(9, 45, 42, 0.06);
+      color: rgba(9, 45, 42, 0.56);
+      font-size: 16px;
+    }
+
+    .eei-birthday-plantel-modal {
+      background: rgba(8, 20, 18, 0.22);
+      align-items: end;
+      padding: 12px;
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
+
+    .eei-birthday-plantel-dialog {
+      width: min(460px, calc(100vw - 24px));
+      max-height: min(620px, calc(100vh - 28px));
+      padding: 16px;
+      border-radius: 24px;
+      border-color: rgba(9, 45, 42, 0.1);
+      color: #0f1b19;
+      box-shadow: 0 28px 100px rgba(8, 20, 18, 0.24);
+    }
+
+    .eei-birthday-plantel-dialog h2 {
+      margin: 2px 40px 12px 0;
+      font-size: 22px;
+      letter-spacing: -0.04em;
+      color: #0f1b19;
+    }
+
+    .eei-birthday-plantel-search {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid rgba(15, 27, 25, 0.12);
+      border-radius: 16px;
+      padding: 0 12px;
+      margin: 0 0 12px;
+      background: rgba(15, 27, 25, 0.045);
+      color: #0f1b19;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      outline: none;
+    }
+
+    .eei-birthday-plantel-list {
+      max-height: min(320px, 45vh);
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .eei-birthday-plantel-list label {
+      min-height: 46px;
+      padding: 11px 12px;
+      border-radius: 15px;
+      background: rgba(15, 27, 25, 0.045);
+      color: #0f1b19;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .eei-birthday-plantel-list input {
+      accent-color: #05756e;
+    }
+
+    .eei-birthday-plantel-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .eei-birthday-plantel-actions button {
+      min-height: 42px;
+      border-radius: 15px;
+      background: rgba(15, 27, 25, 0.06);
+      color: #0f1b19;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .eei-birthday-plantel-actions [data-action="save"] {
+      background: linear-gradient(135deg, #05756e, #064b46);
+      color: #fff;
+    }
+
+    @media (max-width: 520px) {
+      .eei-birthday-plantel-card {
+        left: auto;
+        right: max(10px, env(safe-area-inset-right));
+        bottom: max(10px, env(safe-area-inset-bottom));
+      }
+
+      .eei-birthday-plantel-label {
+        display: none;
+      }
+
+      .eei-birthday-plantel-open {
+        padding-right: 3px;
+      }
+
+      .eei-birthday-plantel-dialog {
+        width: calc(100vw - 20px);
+        border-radius: 24px 24px 18px 18px;
+      }
     }
 
     .eei-worldcup {

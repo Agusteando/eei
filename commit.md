@@ -1,1 +1,1 @@
-Usa API pública de planteles de Signia y suaviza preferencias de cumpleaños
+Refina Command Center y mejora selección no intrusiva de planteles de cumpleaños

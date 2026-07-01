@@ -7,21 +7,23 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f4f1ea;
-      --ink: #111c1a;
-      --muted: #66726f;
-      --line: rgba(17, 28, 26, .1);
-      --card: rgba(255, 255, 255, .82);
-      --solid: #fff;
-      --teal: #0d766f;
-      --teal-2: #084d48;
-      --mint: #def5ed;
-      --amber: #a56c13;
-      --amber-bg: #fff3d8;
-      --red: #c9473d;
+      --bg: #f5f7f5;
+      --panel: rgba(255,255,255,.84);
+      --panel-strong: #fff;
+      --ink: #0f1b19;
+      --muted: #687772;
+      --line: rgba(15,27,25,.10);
+      --line-strong: rgba(15,27,25,.16);
+      --teal: #05756e;
+      --teal-dark: #064b46;
+      --mint: #dff6ee;
+      --mint-2: #effbf6;
+      --red: #d84d45;
       --red-bg: #fff0ee;
-      --shadow: 0 24px 80px rgba(8, 40, 36, .14);
-      --radius: 28px;
+      --amber: #a66f14;
+      --amber-bg: #fff5dd;
+      --shadow: 0 24px 70px rgba(11,42,38,.10);
+      --radius: 26px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -31,282 +33,418 @@
       margin: 0;
       color: var(--ink);
       background:
-        radial-gradient(circle at 0 0, rgba(13, 118, 111, .18), transparent 34vw),
-        radial-gradient(circle at 100% 10%, rgba(165, 108, 19, .12), transparent 30vw),
-        linear-gradient(180deg, #f9f7f1, #edf7f2 72%, #e7f0eb);
-      letter-spacing: -.01em;
+        radial-gradient(circle at 0 0, rgba(5,117,110,.14), transparent 36vw),
+        radial-gradient(circle at 100% 12%, rgba(166,111,20,.10), transparent 30vw),
+        linear-gradient(180deg, #fbfaf6, #eef7f2 74%, #e9f0ec);
+      letter-spacing: -.012em;
     }
     button, input, textarea, select { font: inherit; }
     button { border: 0; cursor: pointer; }
     input, textarea, select { color: var(--ink); }
 
-    .app {
-      width: min(100%, 1180px);
+    .shell {
+      display: grid;
+      min-height: 100vh;
+      padding-bottom: calc(84px + env(safe-area-inset-bottom));
+    }
+
+    .rail {
+      display: none;
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: 76px;
+      padding: 14px 10px;
+      border-right: 1px solid var(--line);
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(18px);
+      z-index: 40;
+    }
+
+    .rail-mark {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+      box-shadow: 0 12px 26px rgba(5,117,110,.23);
+      font-weight: 950;
+    }
+
+    .rail a,
+    .rail button {
+      width: 54px;
+      min-height: 54px;
+      margin: 6px 0;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      color: #50605b;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .rail a.active { background: var(--mint-2); color: var(--teal-dark); }
+    .rail .rail-bottom { position: absolute; left: 10px; right: 10px; bottom: max(14px, env(safe-area-inset-bottom)); }
+
+    .main {
+      width: min(100%, 1320px);
       margin: 0 auto;
-      padding: max(14px, env(safe-area-inset-top)) 14px calc(100px + env(safe-area-inset-bottom));
+      padding: max(14px, env(safe-area-inset-top)) 14px 0;
     }
 
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 20;
+      z-index: 30;
+      margin: -14px -14px 14px;
+      padding: max(14px, env(safe-area-inset-top)) 14px 12px;
       display: grid;
       gap: 10px;
-      padding: 10px 0 14px;
-      background: linear-gradient(180deg, rgba(249,247,241,.94), rgba(249,247,241,.74) 80%, transparent);
-      backdrop-filter: blur(16px);
+      background: linear-gradient(180deg, rgba(251,250,246,.96), rgba(251,250,246,.76) 82%, transparent);
+      backdrop-filter: blur(18px);
     }
     .toprow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .mark { width: 42px; height: 42px; border-radius: 15px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--teal), var(--teal-2)); font-weight: 950; box-shadow: 0 14px 28px rgba(13,118,111,.24); }
-    h1, h2, h3, p { margin: 0; }
-    h1 { font-size: 23px; line-height: 1; letter-spacing: -.05em; }
-    .sub { color: var(--muted); font-size: 12px; font-weight: 750; margin-top: 3px; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .mobile-mark { width: 42px; height: 42px; border-radius: 15px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--teal), var(--teal-dark)); font-weight: 950; box-shadow: 0 12px 26px rgba(5,117,110,.23); }
+    h1,h2,h3,p { margin: 0; }
+    h1 { font-size: clamp(22px, 5.5vw, 31px); line-height: .98; letter-spacing: -.055em; }
+    .saved { color: var(--muted); font-size: 12px; font-weight: 850; margin-top: 2px; }
 
-    .status-line { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
-    .chip, .mini-chip { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.75); color: var(--muted); font-weight: 900; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .chip.ok, .mini-chip.ok { color: var(--teal-2); background: var(--mint); border-color: rgba(13,118,111,.18); }
-    .chip.warn, .mini-chip.warn { color: var(--amber); background: var(--amber-bg); border-color: rgba(165,108,19,.22); }
-    .chip.bad, .mini-chip.bad { color: var(--red); background: var(--red-bg); border-color: rgba(201,71,61,.2); }
-    .dot { width: 8px; height: 8px; border-radius: 999px; background: currentColor; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent); flex: 0 0 auto; }
+    .status-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .chip, .mini-chip {
+      min-height: 34px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 11px;
+      background: rgba(255,255,255,.76);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .chip.ok, .mini-chip.ok { color: var(--teal-dark); background: var(--mint); border-color: rgba(5,117,110,.17); }
+    .chip.warn, .mini-chip.warn { color: var(--amber); background: var(--amber-bg); border-color: rgba(166,111,20,.22); }
+    .chip.bad, .mini-chip.bad { color: var(--red); background: var(--red-bg); border-color: rgba(216,77,69,.22); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent); }
 
-    .layout { display: grid; gap: 14px; }
+    .grid { display: grid; gap: 14px; }
     .stack { display: grid; gap: 14px; }
-    .card { border: 1px solid var(--line); background: var(--card); backdrop-filter: blur(20px); box-shadow: var(--shadow); border-radius: var(--radius); overflow: hidden; }
-    .card-head { padding: 18px 18px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .card-head h2 { font-size: 18px; line-height: 1; letter-spacing: -.04em; }
-    .body { padding: 16px 18px 18px; display: grid; gap: 12px; }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+      overflow: hidden;
+    }
+    .head { padding: 17px 17px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .head-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .icon { width: 36px; height: 36px; border-radius: 14px; display: grid; place-items: center; color: var(--teal-dark); background: var(--mint-2); border: 1px solid rgba(5,117,110,.10); font-weight: 950; }
+    .head h2 { font-size: 18px; line-height: 1; letter-spacing: -.04em; }
+    .body { padding: 15px 17px 17px; display: grid; gap: 12px; }
 
-    .hero-title { font-size: 28px; letter-spacing: -.055em; line-height: .95; }
-    .preset-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
-    .preset { min-height: 86px; border-radius: 22px; padding: 14px; display: grid; align-content: center; text-align: left; gap: 5px; background: rgba(255,255,255,.88); border: 1px solid var(--line); color: var(--ink); box-shadow: 0 12px 30px rgba(8,40,36,.06); }
-    .preset strong { font-size: 19px; line-height: 1; letter-spacing: -.04em; }
-    .preset span { color: var(--muted); font-size: 12px; font-weight: 800; }
-    .preset.primary { background: linear-gradient(135deg, var(--teal), var(--teal-2)); color: #fff; }
-    .preset.primary span { color: rgba(255,255,255,.78); }
-    .preset.active { outline: 3px solid rgba(13,118,111,.22); }
+    .maintenance-title { font-size: clamp(24px, 6vw, 34px); line-height: .94; letter-spacing: -.06em; }
+    .preset-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+    .preset {
+      min-height: 78px;
+      border-radius: 22px;
+      padding: 13px;
+      display: grid;
+      align-content: center;
+      gap: 5px;
+      text-align: left;
+      background: rgba(255,255,255,.82);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 26px rgba(11,42,38,.05);
+      color: var(--ink);
+    }
+    .preset strong { font-size: 18px; line-height: 1; letter-spacing: -.04em; }
+    .preset span { color: var(--muted); font-size: 11px; font-weight: 900; }
+    .preset.active { outline: 3px solid rgba(5,117,110,.19); background: #fff; }
+    .preset.primary { background: linear-gradient(135deg, var(--teal), var(--teal-dark)); color: #fff; border-color: transparent; }
+    .preset.primary span { color: rgba(255,255,255,.76); }
 
     .field { display: grid; gap: 8px; }
-    .label { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 950; color: #33433f; }
-    input, textarea, select { width: 100%; border: 1px solid rgba(17,28,26,.14); border-radius: 18px; background: rgba(255,255,255,.94); padding: 13px 14px; outline: none; font-weight: 800; box-shadow: inset 0 1px 0 rgba(255,255,255,.9); }
-    textarea { resize: vertical; min-height: 92px; line-height: 1.35; }
-    input:focus, textarea:focus, select:focus { border-color: rgba(13,118,111,.45); box-shadow: 0 0 0 4px rgba(13,118,111,.12); }
+    .label { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #2f423e; font-size: 12px; font-weight: 950; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      border-radius: 17px;
+      background: rgba(255,255,255,.92);
+      padding: 12px 13px;
+      font-weight: 820;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
+    }
+    textarea { resize: vertical; min-height: 88px; line-height: 1.36; }
+    input:focus, textarea:focus, select:focus { border-color: rgba(5,117,110,.42); box-shadow: 0 0 0 4px rgba(5,117,110,.11); }
 
-    .preview-card { display: grid; gap: 12px; border-radius: 24px; padding: 16px; background: linear-gradient(145deg, rgba(255,255,255,.95), rgba(255,255,255,.72)); border: 1px solid rgba(17,28,26,.1); }
-    .notice { border-radius: 22px; padding: 16px; background: #10231f; color: #fff; box-shadow: 0 18px 40px rgba(16,35,31,.20); display: grid; gap: 8px; }
-    .notice .eyebrow { color: #80e1d0; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 950; }
-    .notice strong { font-size: 18px; line-height: 1; letter-spacing: -.03em; }
-    .notice span { font-size: 13px; color: rgba(255,255,255,.78); line-height: 1.35; }
-    .notice time { justify-self: start; padding: 8px 10px; border-radius: 999px; background: rgba(255,255,255,.12); font-size: 12px; font-weight: 900; color: #fff; }
-
-    .actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
-    .btn { min-height: 48px; border-radius: 18px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--teal-2); color: #fff; font-weight: 950; box-shadow: 0 16px 34px rgba(8,77,72,.22); }
-    .btn.secondary { background: rgba(255,255,255,.92); color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
-    .btn.ghost { background: transparent; color: var(--teal-2); border: 1px solid rgba(13,118,111,.2); box-shadow: none; }
-    .btn.danger { background: var(--red); }
+    .actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+    .btn {
+      min-height: 48px;
+      border-radius: 17px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+      box-shadow: 0 16px 32px rgba(6,75,70,.22);
+      font-weight: 950;
+    }
+    .btn.secondary { color: var(--ink); background: rgba(255,255,255,.88); border: 1px solid var(--line); box-shadow: none; }
+    .btn.ghost { color: var(--teal-dark); background: transparent; border: 1px solid rgba(5,117,110,.2); box-shadow: none; }
+    .btn.danger { color: var(--red); background: rgba(255,255,255,.88); border: 1px solid rgba(216,77,69,.4); box-shadow: none; }
     .btn:disabled { opacity: .55; cursor: not-allowed; }
 
-    .health-list, .module-list, .host-list { display: grid; gap: 8px; }
-    .row { min-height: 58px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 19px; background: rgba(255,255,255,.72); padding: 12px; }
-    .row strong { display: block; font-size: 15px; letter-spacing: -.02em; }
-    .row span { display: block; color: var(--muted); font-size: 12px; font-weight: 750; margin-top: 2px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .preview-surface {
+      min-height: 250px;
+      border-radius: 26px;
+      padding: 18px;
+      display: grid;
+      align-content: space-between;
+      gap: 18px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 92% 18%, rgba(91,213,188,.22), transparent 28%),
+        linear-gradient(142deg, rgba(7,44,40,1), rgba(5,86,79,.94));
+      box-shadow: 0 24px 54px rgba(7,44,40,.20);
+      overflow: hidden;
+      position: relative;
+    }
+    .preview-surface::after { content: ""; position: absolute; inset: auto -10% -35% 12%; height: 62%; border-radius: 50%; background: rgba(255,255,255,.07); transform: rotate(-8deg); }
+    .preview-copy { position: relative; z-index: 1; display: grid; gap: 8px; }
+    .preview-copy .tag { justify-self: start; min-height: 28px; border-radius: 999px; padding: 0 10px; display: inline-flex; align-items: center; background: rgba(255,255,255,.13); color: #bff3e8; font-size: 11px; font-weight: 950; text-transform: uppercase; letter-spacing: .08em; }
+    .preview-copy strong { font-size: clamp(25px, 6.2vw, 38px); line-height: .95; letter-spacing: -.06em; }
+    .preview-copy span { color: rgba(255,255,255,.78); font-size: 14px; line-height: 1.35; max-width: 46ch; }
+    .preview-state { position: relative; z-index: 1; justify-self: start; min-height: 44px; border-radius: 999px; padding: 0 15px; display: inline-flex; align-items: center; gap: 10px; color: #fff; background: rgba(255,255,255,.12); font-weight: 950; }
 
-    .switch { position: relative; width: 58px; height: 34px; flex: 0 0 auto; }
+    .list { display: grid; gap: 8px; }
+    .row {
+      min-height: 58px;
+      border: 1px solid var(--line);
+      border-radius: 19px;
+      background: rgba(255,255,255,.72);
+      padding: 11px 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+    .row strong { display: block; font-size: 14px; letter-spacing: -.02em; }
+    .row span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 780; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .switch { position: relative; width: 58px; height: 34px; }
     .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; inset: 0; border-radius: 999px; background: #c9d2cf; transition: 160ms ease; }
-    .slider::after { content: ""; position: absolute; width: 26px; height: 26px; left: 4px; top: 4px; border-radius: 999px; background: #fff; box-shadow: 0 6px 16px rgba(17,28,26,.22); transition: 160ms ease; }
+    .slider { position: absolute; inset: 0; border-radius: 999px; background: #cbd3d0; transition: 160ms ease; }
+    .slider::after { content: ""; position: absolute; width: 26px; height: 26px; top: 4px; left: 4px; border-radius: 50%; background: #fff; box-shadow: 0 6px 16px rgba(15,27,25,.22); transition: 160ms ease; }
     .switch input:checked + .slider { background: var(--teal); }
     .switch input:checked + .slider::after { transform: translateX(24px); }
 
-    .savebar { position: fixed; z-index: 30; inset: auto 0 0; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: rgba(244,241,234,.82); backdrop-filter: blur(18px); border-top: 1px solid var(--line); }
-    .savebar-inner { width: min(100%, 1180px); margin: 0 auto; display: grid; grid-template-columns: .8fr 1.2fr; gap: 10px; }
-
-    dialog { width: min(94vw, 560px); border: 0; border-radius: 28px; padding: 0; background: var(--solid); color: var(--ink); box-shadow: 0 28px 100px rgba(8,40,36,.28); }
-    dialog::backdrop { background: rgba(8,20,18,.42); backdrop-filter: blur(6px); }
-    .sheet-head { padding: 18px 18px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .sheet-head h3 { font-size: 22px; letter-spacing: -.05em; }
-    .sheet-body { padding: 16px 18px 18px; display: grid; gap: 12px; }
-    .seg { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
-    .seg button { min-height: 44px; border-radius: 16px; background: rgba(17,28,26,.05); color: var(--ink); font-weight: 950; }
-    .seg button.active { background: var(--mint); color: var(--teal-2); }
-    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .raw { margin: 0; max-height: 54vh; overflow: auto; border-radius: 18px; background: #10231f; color: #dff8f1; padding: 14px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
-    .host-chip { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; border-radius: 16px; padding: 9px 11px; background: rgba(17,28,26,.05); font-weight: 850; }
-    .host-chip button { width: 28px; height: 28px; border-radius: 999px; background: rgba(201,71,61,.12); color: var(--red); font-weight: 950; }
+    .plantel-grid { display: flex; flex-wrap: wrap; gap: 8px; max-height: 146px; overflow: auto; padding-right: 2px; }
+    .plantel-pill { min-height: 32px; border-radius: 999px; padding: 0 11px; display: inline-flex; align-items: center; background: rgba(5,117,110,.09); color: var(--teal-dark); font-size: 12px; font-weight: 900; }
 
     details { border-top: 1px solid var(--line); }
-    summary { list-style: none; cursor: pointer; padding: 16px 18px; font-size: 14px; font-weight: 950; }
+    summary { list-style: none; cursor: pointer; padding: 16px 17px; font-size: 14px; font-weight: 950; }
     summary::-webkit-details-marker { display: none; }
     summary::after { content: "▾"; float: right; color: var(--muted); }
     details[open] summary::after { content: "▴"; }
     .advanced-grid { display: grid; gap: 10px; }
-    .json-editor { min-height: 300px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .json-editor { min-height: 290px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    dialog { width: min(94vw, 560px); border: 0; padding: 0; border-radius: 26px; background: var(--panel-strong); color: var(--ink); box-shadow: 0 28px 100px rgba(11,42,38,.26); }
+    dialog::backdrop { background: rgba(7,20,18,.42); backdrop-filter: blur(6px); }
+    .sheet-head { padding: 18px 18px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .sheet-head h3 { font-size: 23px; line-height: 1; letter-spacing: -.055em; }
+    .sheet-body { padding: 16px 18px 18px; display: grid; gap: 12px; }
+    .seg { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    .seg button { min-height: 44px; border-radius: 16px; background: rgba(15,27,25,.055); color: var(--ink); font-weight: 950; }
+    .seg button.active { background: var(--mint); color: var(--teal-dark); }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .raw { margin: 0; max-height: 58vh; overflow: auto; border-radius: 18px; background: #10231f; color: #dff8f1; padding: 14px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+    .host-chip { min-height: 44px; border-radius: 16px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: rgba(15,27,25,.055); font-weight: 850; }
+    .host-chip button { width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; color: var(--red); background: rgba(216,77,69,.12); font-weight: 950; }
+
+    .savebar { position: fixed; z-index: 35; inset: auto 0 0; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: rgba(245,247,245,.82); border-top: 1px solid var(--line); backdrop-filter: blur(18px); }
+    .savebar-inner { width: min(100%, 1320px); margin: 0 auto; display: grid; grid-template-columns: .9fr 1.1fr; gap: 10px; }
 
     @media (min-width: 760px) {
-      .app { padding-inline: 24px; }
-      .layout { grid-template-columns: .95fr 1.05fr; align-items: start; }
+      .main { padding-inline: 24px; }
+      .grid { grid-template-columns: .96fr 1.04fr; align-items: start; }
       .preset-grid { grid-template-columns: repeat(5,minmax(0,1fr)); }
-      .preset { min-height: 96px; }
+      .preset { min-height: 92px; }
       .actions.triple { grid-template-columns: repeat(3,minmax(0,1fr)); }
       .advanced-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
     }
-    @media (max-width: 520px) {
-      .status-line { grid-template-columns: 1fr 1fr; }
-      .status-line .chip:last-child { grid-column: 1 / -1; }
+    @media (min-width: 1100px) {
+      .rail { display: block; }
+      .main { margin-left: 76px; width: calc(min(100%, 1320px)); }
+      .mobile-mark { display: none; }
+      .topbar { margin-left: -24px; margin-right: -24px; padding-left: 24px; padding-right: 24px; }
+      .grid { grid-template-columns: 1fr 1.08fr; }
+    }
+    @media (max-width: 560px) {
+      .status-strip { grid-template-columns: 1fr 1fr; }
+      .status-strip .chip:last-child { grid-column: 1 / -1; }
+      .actions, .actions.triple, .two { grid-template-columns: 1fr; }
       .savebar-inner { grid-template-columns: 1fr; }
-      .two { grid-template-columns: 1fr; }
       .preset-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .preset:first-child { grid-column: 1 / -1; }
-      .actions { grid-template-columns: 1fr; }
+      .toprow .btn { min-width: 78px; }
     }
   </style>
 </head>
 <body>
-  <main class="app">
-    <header class="topbar">
-      <div class="toprow">
-        <div class="brand">
-          <div class="mark">EEI</div>
-          <div><h1>Command Center</h1><div class="sub" id="lastSaved">—</div></div>
+  <aside class="rail" aria-label="Navegación">
+    <div class="rail-mark">EEI</div>
+    <a href="#panel" class="active" title="Panel">▦</a>
+    <a href="#salud" title="Salud">♡</a>
+    <a href="#planteles" title="Planteles">⌘</a>
+    <a href="#avanzado" title="Avanzado">⚙</a>
+    <div class="rail-bottom"><button type="button" id="railKeyBtn" title="Key">⌁</button></div>
+  </aside>
+
+  <main class="shell">
+    <section class="main" id="panel">
+      <header class="topbar">
+        <div class="toprow">
+          <div class="brand">
+            <div class="mobile-mark">EEI</div>
+            <div><h1>Command Center</h1><div class="saved" id="lastSaved">—</div></div>
+          </div>
+          <button class="btn secondary" type="button" id="openTokenBtn">Key</button>
         </div>
-        <button class="btn secondary" type="button" id="openTokenBtn">Key</button>
-      </div>
-      <div class="status-line">
-        <div class="chip ok" id="globalChip"><span class="dot"></span><span>LIVE</span></div>
-        <div class="chip" id="dirtyChip"><span>Sin cambios</span></div>
-        <div class="chip warn" id="quotaChip"><span>CF manual</span></div>
-      </div>
-    </header>
+        <div class="status-strip">
+          <div class="chip ok" id="globalChip"><span class="dot"></span><span>LIVE</span></div>
+          <div class="chip" id="dirtyChip">Sin cambios</div>
+          <div class="chip" id="tokenChip">Sin key</div>
+        </div>
+      </header>
 
-    <section class="layout">
-      <div class="stack">
-        <section class="card">
-          <div class="card-head"><h2 class="hero-title">🚨 Mantenimiento</h2><span class="mini-chip" id="maintChip">OFF</span></div>
-          <div class="body">
-            <div class="preset-grid">
-              <button class="preset primary" type="button" data-preset="now"><strong>Ahora</strong><span>Inmediato</span></button>
-              <button class="preset" type="button" data-preset="5"><strong>5 min</strong><span>Urgente</span></button>
-              <button class="preset" type="button" data-preset="15"><strong>15 min</strong><span>Aviso corto</span></button>
-              <button class="preset" type="button" data-preset="30"><strong>30 min</strong><span>Programado</span></button>
-              <button class="preset" type="button" id="openScheduleBtn"><strong>Programar</strong><span>Fecha/hora</span></button>
+      <section class="grid">
+        <div class="stack">
+          <section class="card">
+            <div class="head"><div class="head-title"><div class="icon">✚</div><h2 class="maintenance-title">Mantenimiento</h2></div><span class="mini-chip" id="maintChip">OFF</span></div>
+            <div class="body">
+              <div class="preset-grid">
+                <button class="preset primary" type="button" data-preset="now"><strong>Ahora</strong><span>Inmediato</span></button>
+                <button class="preset" type="button" data-preset="5"><strong>5 min</strong><span>Urgente</span></button>
+                <button class="preset" type="button" data-preset="15"><strong>15 min</strong><span>Aviso corto</span></button>
+                <button class="preset" type="button" data-preset="30"><strong>30 min</strong><span>Programado</span></button>
+                <button class="preset" type="button" id="openScheduleBtn"><strong>Programar</strong><span>Fecha/hora</span></button>
+              </div>
+              <div class="field"><div class="label"><span>Mensaje</span><span id="messageCount">0/160</span></div><textarea id="maintenanceMessage" maxlength="160" rows="3"></textarea></div>
+              <div class="actions triple"><button class="btn secondary" type="button" id="previewMaintenanceBtn">Vista</button><button class="btn" type="button" id="activateMaintenanceBtn">Activar</button><button class="btn danger" type="button" id="disableMaintenanceBtn">Apagar</button></div>
             </div>
-            <div class="field">
-              <div class="label"><span>Mensaje</span><span id="messageCount">0</span></div>
-              <textarea id="maintenanceMessage" rows="3" maxlength="160"></textarea>
+          </section>
+
+          <section class="card">
+            <div class="head"><div class="head-title"><div class="icon">◫</div><h2>Módulos</h2></div><span class="mini-chip" id="moduleCount">0 ON</span></div>
+            <div class="body list">
+              <div class="row"><div><strong>ISV</strong><span>Sistemas vivos</span></div><label class="switch"><input type="checkbox" data-bind="campaigns.isv.enabled"><span class="slider"></span></label></div>
+              <div class="row"><div><strong>Cumples</strong><span>Signia</span></div><label class="switch"><input type="checkbox" data-bind="birthday.enabled"><span class="slider"></span></label></div>
+              <div class="row"><div><strong>Mundial</strong><span>Pin + física</span></div><label class="switch"><input type="checkbox" data-bind="festivities.mundial_2026.enabled"><span class="slider"></span></label></div>
+              <div class="row"><div><strong>Navidad</strong><span>Temporada</span></div><label class="switch"><input type="checkbox" data-bind="festivities.christmas.enabled"><span class="slider"></span></label></div>
+              <div class="row"><div><strong>Fuegos</strong><span>Duración limitada</span></div><label class="switch"><input type="checkbox" data-bind="festivities.new_year.enabled"><span class="slider"></span></label></div>
             </div>
-            <div class="actions triple">
-              <button class="btn secondary" type="button" id="previewMaintenanceBtn">Preview</button>
-              <button class="btn" type="button" id="activateMaintenanceBtn">Activar</button>
-              <button class="btn danger" type="button" id="disableMaintenanceBtn">Apagar</button>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="card">
+            <div class="head"><div class="head-title"><div class="icon">◉</div><h2>Vista</h2></div><span class="mini-chip ok" id="previewChip">LIVE</span></div>
+            <div class="body">
+              <div class="preview-surface">
+                <div class="preview-copy"><div class="tag" id="noticeSeverity">NORMAL</div><strong id="noticeTitle">Sin mantenimiento</strong><span id="noticeMessage">EEI listo.</span></div>
+                <div class="preview-state"><span class="dot"></span><span id="noticeTime">—</span></div>
+              </div>
+              <div class="actions"><button class="btn secondary" type="button" id="previewBirthdayBtn">Cumple</button><button class="btn secondary" type="button" id="previewMundialBtn">Mundial</button></div>
             </div>
+          </section>
+
+          <section class="card" id="salud">
+            <div class="head"><div class="head-title"><div class="icon">♡</div><h2>Salud</h2></div><span class="mini-chip" id="healthChip">—</span></div>
+            <div class="body list">
+              <div class="row"><div><strong>Cumpleaños</strong><span id="birthdayEndpoint">Signia</span></div><button class="mini-chip" id="birthdayStatus" type="button">Probar</button></div>
+              <div class="row"><div><strong>Planteles</strong><span id="plantelesEndpoint">Signia</span></div><button class="mini-chip" id="plantelesStatus" type="button">Probar</button></div>
+              <div class="row"><div><strong>Mundial</strong><span id="mundialEndpoint">Football</span></div><button class="mini-chip" id="mundialStatus" type="button">Probar</button></div>
+              <div class="actions triple"><button class="btn secondary" type="button" id="debugBirthdayBtn">Cumples</button><button class="btn secondary" type="button" id="debugPlantelesBtn">Planteles</button><button class="btn secondary" type="button" id="debugMundialBtn">Mundial</button></div>
+            </div>
+          </section>
+
+          <section class="card" id="planteles">
+            <div class="head"><div class="head-title"><div class="icon">⌘</div><h2>Planteles</h2></div><span class="mini-chip" id="plantelesCount">—</span></div>
+            <div class="body"><div class="plantel-grid" id="plantelesGrid"></div><button class="btn secondary" type="button" id="refreshPlantelesBtn">Actualizar</button></div>
+          </section>
+
+          <section class="card">
+            <div class="head"><div class="head-title"><div class="icon">▤</div><h2>Hosts</h2></div><button class="mini-chip" type="button" id="openHostsBtn">Editar</button></div>
+            <div class="body"><div class="row"><div><strong id="hostCount">0</strong><span>bloqueados</span></div><span class="mini-chip">Exactos</span></div></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="card" id="avanzado" style="margin-top:14px;">
+        <details>
+          <summary>Avanzado</summary>
+          <div class="body advanced-grid">
+            <div class="field"><div class="label">Modo cumpleaños</div><select data-bind="birthday.mode"><option value="api">api</option><option value="mock">mock</option></select></div>
+            <div class="field"><div class="label">Cumples API</div><input data-bind="birthday.apiUrl"></div>
+            <div class="field"><div class="label">Planteles API</div><input data-bind="birthday.plantelesApiUrl"></div>
+            <div class="field"><div class="label">Equipo Mundial</div><input data-bind="festivities.mundial_2026.priorityTeam"></div>
+            <div class="field"><div class="label">Duración fuegos</div><input type="number" min="2500" step="500" data-bind="festivities.new_year.durationMs"></div>
+            <div class="field"><div class="label">Mundial API</div><input data-bind="festivities.mundial_2026.sportsApiUrl"></div>
+            <div class="field"><div class="label">ISV script</div><input data-bind="campaigns.isv.scriptUrl"></div>
+            <div class="field"><div class="label">ISV incluir</div><textarea id="isvIncludeHostnames"></textarea></div>
+            <div class="field"><div class="label">ISV excluir</div><textarea id="isvExcludeHostnames"></textarea></div>
+            <div class="field"><div class="label">JSON</div><textarea class="json-editor" id="jsonEditor"></textarea><div class="actions"><button class="btn secondary" id="applyJsonBtn" type="button">Aplicar</button><button class="btn ghost" id="formatJsonBtn" type="button">Formatear</button></div></div>
           </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head"><h2>Salud</h2><span class="mini-chip" id="healthChip">—</span></div>
-          <div class="body health-list">
-            <div class="row"><div><strong>Cumpleaños</strong><span id="birthdayEndpoint">Signia</span></div><button class="mini-chip" id="birthdayStatus">Probar</button></div>
-            <div class="row"><div><strong>Planteles</strong><span id="plantelesEndpoint">Signia</span></div><button class="mini-chip" id="plantelesStatus">Probar</button></div>
-            <div class="row"><div><strong>Mundial</strong><span id="mundialEndpoint">Football</span></div><button class="mini-chip" id="mundialStatus">Probar</button></div>
-            <div class="actions">
-              <button class="btn secondary" type="button" id="debugBirthdayBtn">Cumples</button>
-              <button class="btn secondary" type="button" id="debugPlantelesBtn">Planteles</button>
-              <button class="btn secondary" type="button" id="debugMundialBtn">Mundial</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head"><h2>Hosts</h2><button class="mini-chip" type="button" id="openHostsBtn">Editar</button></div>
-          <div class="body">
-            <div class="row"><div><strong id="hostCount">0</strong><span>bloqueados</span></div><span class="mini-chip" id="hostMode">Exactos</span></div>
-          </div>
-        </section>
-      </div>
-
-      <div class="stack">
-        <section class="card">
-          <div class="card-head"><h2>Vista</h2><span class="mini-chip ok" id="previewChip">LIVE</span></div>
-          <div class="body preview-card">
-            <div class="notice" id="maintenancePreview">
-              <div class="eyebrow" id="noticeSeverity">NORMAL</div>
-              <strong id="noticeTitle">Sin mantenimiento</strong>
-              <span id="noticeMessage">EEI listo.</span>
-              <time id="noticeTime">—</time>
-            </div>
-            <div class="actions">
-              <button class="btn secondary" type="button" id="previewBirthdayBtn">Cumple</button>
-              <button class="btn secondary" type="button" id="previewMundialBtn">Mundial</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head"><h2>Módulos</h2><span class="mini-chip" id="moduleCount">0 ON</span></div>
-          <div class="body module-list">
-            <div class="row"><div><strong>ISV</strong><span>Sistemas vivos</span></div><label class="switch"><input type="checkbox" data-bind="campaigns.isv.enabled"><span class="slider"></span></label></div>
-            <div class="row"><div><strong>Cumples</strong><span>Signia</span></div><label class="switch"><input type="checkbox" data-bind="birthday.enabled"><span class="slider"></span></label></div>
-            <div class="row"><div><strong>Mundial</strong><span>Pin + física</span></div><label class="switch"><input type="checkbox" data-bind="festivities.mundial_2026.enabled"><span class="slider"></span></label></div>
-            <div class="row"><div><strong>Navidad</strong><span>Temporada</span></div><label class="switch"><input type="checkbox" data-bind="festivities.christmas.enabled"><span class="slider"></span></label></div>
-            <div class="row"><div><strong>Fuegos</strong><span>Duración limitada</span></div><label class="switch"><input type="checkbox" data-bind="festivities.new_year.enabled"><span class="slider"></span></label></div>
-          </div>
-        </section>
-
-        <section class="card">
-          <details>
-            <summary>Avanzado</summary>
-            <div class="body advanced-grid">
-              <div class="field"><div class="label">Modo cumpleaños</div><select data-bind="birthday.mode"><option value="api">api</option><option value="mock">mock</option></select></div>
-              <div class="field"><div class="label">Cumples API</div><input data-bind="birthday.apiUrl"></div>
-              <div class="field"><div class="label">Planteles API</div><input data-bind="birthday.plantelesApiUrl"></div>
-              <div class="field"><div class="label">Equipo Mundial</div><input data-bind="festivities.mundial_2026.priorityTeam"></div>
-              <div class="field"><div class="label">Duración fuegos</div><input type="number" min="2500" step="500" data-bind="festivities.new_year.durationMs"></div>
-              <div class="field"><div class="label">Mundial API</div><input data-bind="festivities.mundial_2026.sportsApiUrl"></div>
-              <div class="field"><div class="label">ISV script</div><input data-bind="campaigns.isv.scriptUrl"></div>
-              <div class="field"><div class="label">ISV incluir</div><textarea id="isvIncludeHostnames"></textarea></div>
-              <div class="field"><div class="label">ISV excluir</div><textarea id="isvExcludeHostnames"></textarea></div>
-              <div class="field"><div class="label">JSON</div><textarea class="json-editor" id="jsonEditor"></textarea><div class="actions"><button class="btn secondary" id="applyJsonBtn" type="button">Aplicar</button><button class="btn ghost" id="formatJsonBtn" type="button">Formatear</button></div></div>
-            </div>
-          </details>
-        </section>
-      </div>
+        </details>
+      </section>
     </section>
   </main>
 
   <nav class="savebar"><div class="savebar-inner"><button class="btn secondary" type="button" id="loadBtn">Cargar</button><button class="btn" type="button" id="saveBtn" disabled>Guardar</button></div></nav>
 
-  <dialog id="tokenDialog"><div class="sheet-head"><h3>Admin key</h3><button class="mini-chip" data-close-dialog>×</button></div><div class="sheet-body"><input type="password" id="adminToken" placeholder="EEI_ADMIN_TOKEN"><label class="row"><div><strong>Recordar</strong><span>este navegador</span></div><input type="checkbox" id="rememberToken"></label><div class="actions"><button class="btn secondary" id="forgetTokenBtn" type="button">Olvidar</button><button class="btn" id="saveTokenBtn" type="button">Guardar</button></div></div></dialog>
-
-  <dialog id="scheduleDialog"><div class="sheet-head"><h3>Programar</h3><button class="mini-chip" data-close-dialog>×</button></div><div class="sheet-body"><div class="seg"><button type="button" data-day="today">Hoy</button><button type="button" data-day="tomorrow">Mañana</button><button type="button" data-day="custom">Elegir</button></div><div class="two"><input type="date" id="scheduleDate"><input type="time" id="scheduleTime" step="60"></div><div class="seg"><button type="button" data-time="now">Ahora</button><button type="button" data-time="06:00">6:00</button><button type="button" data-time="22:00">22:00</button></div><div class="notice"><div class="eyebrow">VISTA</div><strong id="schedulePreview">—</strong><span id="schedulePreviewSub">—</span></div><div class="actions"><button class="btn secondary" data-close-dialog type="button">Cancelar</button><button class="btn" id="useScheduleBtn" type="button">Usar</button></div></div></dialog>
-
-  <dialog id="rawDialog"><div class="sheet-head"><h3 id="rawTitle">JSON</h3><button class="mini-chip" data-close-dialog>×</button></div><div class="sheet-body"><pre class="raw" id="rawOutput">—</pre><button class="btn secondary" id="copyRawBtn" type="button">Copiar</button></div></dialog>
-
-  <dialog id="hostsDialog"><div class="sheet-head"><h3>Hosts</h3><button class="mini-chip" data-close-dialog>×</button></div><div class="sheet-body"><div class="host-list" id="hostsList"></div><div class="two"><input id="newHostInput" placeholder="subdominio.dominio.com"><button class="btn" id="addHostBtn" type="button">Agregar</button></div><button class="btn secondary" data-close-dialog type="button">Listo</button></div></dialog>
+  <dialog id="tokenDialog"><div class="sheet-head"><h3>Admin key</h3><button class="mini-chip" data-close-dialog type="button">×</button></div><div class="sheet-body"><input type="password" id="adminToken" placeholder="EEI_ADMIN_TOKEN"><label class="row"><div><strong>Recordar</strong><span>este navegador</span></div><input type="checkbox" id="rememberToken"></label><div class="actions"><button class="btn secondary" id="forgetTokenBtn" type="button">Olvidar</button><button class="btn" id="saveTokenBtn" type="button">Guardar</button></div></div></dialog>
+  <dialog id="scheduleDialog"><div class="sheet-head"><h3>Programar</h3><button class="mini-chip" data-close-dialog type="button">×</button></div><div class="sheet-body"><div class="seg"><button type="button" data-day="today">Hoy</button><button type="button" data-day="tomorrow">Mañana</button><button type="button" data-day="custom">Elegir</button></div><div class="two"><input type="date" id="scheduleDate"><input type="time" id="scheduleTime" step="60"></div><div class="seg"><button type="button" data-time="now">Ahora</button><button type="button" data-time="06:00">6:00</button><button type="button" data-time="22:00">22:00</button></div><div class="preview-surface" style="min-height:160px;"><div class="preview-copy"><div class="tag">VISTA</div><strong id="schedulePreview">—</strong><span id="schedulePreviewSub">—</span></div></div><div class="actions"><button class="btn secondary" data-close-dialog type="button">Cancelar</button><button class="btn" id="useScheduleBtn" type="button">Usar</button></div></div></dialog>
+  <dialog id="rawDialog"><div class="sheet-head"><h3 id="rawTitle">JSON</h3><button class="mini-chip" data-close-dialog type="button">×</button></div><div class="sheet-body"><pre class="raw" id="rawOutput">—</pre><button class="btn secondary" id="copyRawBtn" type="button">Copiar</button></div></dialog>
+  <dialog id="hostsDialog"><div class="sheet-head"><h3>Hosts</h3><button class="mini-chip" data-close-dialog type="button">×</button></div><div class="sheet-body"><div class="list" id="hostsList"></div><div class="two"><input id="newHostInput" placeholder="subdominio.dominio.com"><button class="btn" id="addHostBtn" type="button">Agregar</button></div><button class="btn secondary" data-close-dialog type="button">Listo</button></div></dialog>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v15";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v16";
 
     const TOKEN_STORAGE_KEY = "eei:adminToken";
     const REMEMBER_STORAGE_KEY = "eei:rememberToken";
-    const DEFAULT_MESSAGE = "Guarda tu avance.";
+    const DEFAULT_MESSAGE = "La plataforma entrará en una ventana breve de servicio.";
     const SAMPLE_BIRTHDAY = { id: "preview", name: "Colaborador Preview", puesto: "Equipo EEI", plantel: "Sandbox", cumpleanos: "01-01" };
     const state = clone(DEFAULT_CONFIG);
     let dirty = false;
     let loadedOnce = false;
     let lastSavedAt = null;
     let rawPayload = {};
+    let plantelesCatalog = [];
 
     const $ = (id) => document.getElementById(id);
     const refs = {
-      globalChip: $("globalChip"), dirtyChip: $("dirtyChip"), quotaChip: $("quotaChip"), lastSaved: $("lastSaved"), maintChip: $("maintChip"),
+      globalChip: $("globalChip"), dirtyChip: $("dirtyChip"), tokenChip: $("tokenChip"), lastSaved: $("lastSaved"), maintChip: $("maintChip"),
       message: $("maintenanceMessage"), messageCount: $("messageCount"), noticeSeverity: $("noticeSeverity"), noticeTitle: $("noticeTitle"), noticeMessage: $("noticeMessage"), noticeTime: $("noticeTime"),
       activateMaintenanceBtn: $("activateMaintenanceBtn"), disableMaintenanceBtn: $("disableMaintenanceBtn"), previewMaintenanceBtn: $("previewMaintenanceBtn"), openScheduleBtn: $("openScheduleBtn"),
       debugBirthdayBtn: $("debugBirthdayBtn"), debugPlantelesBtn: $("debugPlantelesBtn"), debugMundialBtn: $("debugMundialBtn"), birthdayStatus: $("birthdayStatus"), plantelesStatus: $("plantelesStatus"), mundialStatus: $("mundialStatus"), birthdayEndpoint: $("birthdayEndpoint"), plantelesEndpoint: $("plantelesEndpoint"), mundialEndpoint: $("mundialEndpoint"), healthChip: $("healthChip"),
-      hostCount: $("hostCount"), hostMode: $("hostMode"), openHostsBtn: $("openHostsBtn"), hostsList: $("hostsList"), newHostInput: $("newHostInput"), addHostBtn: $("addHostBtn"),
-      moduleCount: $("moduleCount"), previewBirthdayBtn: $("previewBirthdayBtn"), previewMundialBtn: $("previewMundialBtn"),
-      loadBtn: $("loadBtn"), saveBtn: $("saveBtn"), openTokenBtn: $("openTokenBtn"), adminToken: $("adminToken"), rememberToken: $("rememberToken"), saveTokenBtn: $("saveTokenBtn"), forgetTokenBtn: $("forgetTokenBtn"),
-      tokenDialog: $("tokenDialog"), scheduleDialog: $("scheduleDialog"), rawDialog: $("rawDialog"), hostsDialog: $("hostsDialog"), rawTitle: $("rawTitle"), rawOutput: $("rawOutput"), copyRawBtn: $("copyRawBtn"),
-      scheduleDate: $("scheduleDate"), scheduleTime: $("scheduleTime"), schedulePreview: $("schedulePreview"), schedulePreviewSub: $("schedulePreviewSub"), useScheduleBtn: $("useScheduleBtn"),
+      plantelesGrid: $("plantelesGrid"), plantelesCount: $("plantelesCount"), refreshPlantelesBtn: $("refreshPlantelesBtn"),
+      hostCount: $("hostCount"), openHostsBtn: $("openHostsBtn"), hostsList: $("hostsList"), newHostInput: $("newHostInput"), addHostBtn: $("addHostBtn"), moduleCount: $("moduleCount"), previewBirthdayBtn: $("previewBirthdayBtn"), previewMundialBtn: $("previewMundialBtn"),
+      loadBtn: $("loadBtn"), saveBtn: $("saveBtn"), openTokenBtn: $("openTokenBtn"), railKeyBtn: $("railKeyBtn"), adminToken: $("adminToken"), rememberToken: $("rememberToken"), saveTokenBtn: $("saveTokenBtn"), forgetTokenBtn: $("forgetTokenBtn"), tokenDialog: $("tokenDialog"),
+      scheduleDialog: $("scheduleDialog"), scheduleDate: $("scheduleDate"), scheduleTime: $("scheduleTime"), schedulePreview: $("schedulePreview"), schedulePreviewSub: $("schedulePreviewSub"), useScheduleBtn: $("useScheduleBtn"),
+      rawDialog: $("rawDialog"), rawTitle: $("rawTitle"), rawOutput: $("rawOutput"), copyRawBtn: $("copyRawBtn"), hostsDialog: $("hostsDialog"),
       isvIncludeHostnames: $("isvIncludeHostnames"), isvExcludeHostnames: $("isvExcludeHostnames"), jsonEditor: $("jsonEditor"), applyJsonBtn: $("applyJsonBtn"), formatJsonBtn: $("formatJsonBtn")
     };
 
@@ -320,6 +458,7 @@
       await loadCurrentConfig({ initial: true });
       await startEEI(state, { sandbox: true });
       render();
+      window.setInterval(render, 30000);
     }
 
     function bind() {
@@ -330,8 +469,8 @@
       document.querySelectorAll("[data-time]").forEach((btn) => btn.addEventListener("click", () => chooseTime(btn.dataset.time)));
 
       refs.message.addEventListener("input", () => { ensureDefaults(); state.maintenance.message = refs.message.value; markDirty(); render(); updatePreview(); });
-      refs.activateMaintenanceBtn.addEventListener("click", () => { ensureDefaults(); state.maintenance.enabled = true; if (!state.maintenance.targetAt) applyPreset("5", false); markDirty(); render(); updatePreview(); });
-      refs.disableMaintenanceBtn.addEventListener("click", () => { ensureDefaults(); state.maintenance.enabled = false; markDirty(); render(); updatePreview(); });
+      refs.activateMaintenanceBtn.addEventListener("click", async () => { ensureDefaults(); state.maintenance.enabled = true; if (!isValidDate(state.maintenance.targetAt)) applyPreset("5", false); markDirty(); render(); updatePreview(); await autosaveOrAskKey(); });
+      refs.disableMaintenanceBtn.addEventListener("click", async () => { ensureDefaults(); state.maintenance.enabled = false; markDirty(); render(); updatePreview(); await autosaveOrAskKey(); });
       refs.previewMaintenanceBtn.addEventListener("click", updatePreview);
       refs.openScheduleBtn.addEventListener("click", openSchedule);
       refs.useScheduleBtn.addEventListener("click", useSchedule);
@@ -339,9 +478,10 @@
       refs.debugBirthdayBtn.addEventListener("click", () => debugApi("birthday"));
       refs.debugPlantelesBtn.addEventListener("click", () => debugApi("planteles"));
       refs.debugMundialBtn.addEventListener("click", () => debugApi("mundial"));
-      refs.birthdayStatus.addEventListener("click", () => showRaw("birthday"));
-      refs.plantelesStatus.addEventListener("click", () => showRaw("planteles"));
-      refs.mundialStatus.addEventListener("click", () => showRaw("mundial"));
+      refs.birthdayStatus.addEventListener("click", () => rawPayload.birthday ? showRaw("birthday") : debugApi("birthday"));
+      refs.plantelesStatus.addEventListener("click", () => rawPayload.planteles ? showRaw("planteles") : debugApi("planteles"));
+      refs.mundialStatus.addEventListener("click", () => rawPayload.mundial ? showRaw("mundial") : debugApi("mundial"));
+      refs.refreshPlantelesBtn.addEventListener("click", () => debugApi("planteles"));
       refs.copyRawBtn.addEventListener("click", () => navigator.clipboard?.writeText(refs.rawOutput.textContent || ""));
       refs.previewBirthdayBtn.addEventListener("click", previewBirthday);
       refs.previewMundialBtn.addEventListener("click", previewMundial);
@@ -351,24 +491,17 @@
       refs.newHostInput.addEventListener("keydown", (event) => { if (event.key === "Enter") addHost(); });
 
       refs.openTokenBtn.addEventListener("click", () => refs.tokenDialog.showModal());
+      refs.railKeyBtn?.addEventListener("click", () => refs.tokenDialog.showModal());
       refs.saveTokenBtn.addEventListener("click", saveTokenLocal);
       refs.forgetTokenBtn.addEventListener("click", forgetTokenLocal);
-      refs.rememberToken.addEventListener("change", () => { localStorage.setItem(REMEMBER_STORAGE_KEY, refs.rememberToken.checked ? "1" : "0"); if (refs.rememberToken.checked && refs.adminToken.value.trim()) saveTokenLocal(); });
+      refs.rememberToken.addEventListener("change", () => { localStorage.setItem(REMEMBER_STORAGE_KEY, refs.rememberToken.checked ? "1" : "0"); if (refs.rememberToken.checked && refs.adminToken.value.trim()) saveTokenLocal(); renderTokenState(); });
       refs.loadBtn.addEventListener("click", () => loadCurrentConfig({ manual: true }));
-      refs.saveBtn.addEventListener("click", saveConfig);
+      refs.saveBtn.addEventListener("click", () => saveConfig());
 
       refs.isvIncludeHostnames.addEventListener("input", () => { ensureIsvConfig(); state.campaigns.isv.includeHostnames = parseHostList(refs.isvIncludeHostnames.value); markDirty(); render(); });
       refs.isvExcludeHostnames.addEventListener("input", () => { ensureIsvConfig(); state.campaigns.isv.excludeHostnames = parseHostList(refs.isvExcludeHostnames.value); markDirty(); render(); });
       refs.applyJsonBtn.addEventListener("click", applyJson);
       refs.formatJsonBtn.addEventListener("click", () => refs.jsonEditor.value = JSON.stringify(state, null, 2));
-      refs.scheduleDate.addEventListener("input", renderSchedulePreview);
-      refs.scheduleTime.addEventListener("input", renderSchedulePreview);
-    }
-
-    function hydrateToken() {
-      const saved = localStorage.getItem(TOKEN_STORAGE_KEY) || "";
-      refs.adminToken.value = saved;
-      refs.rememberToken.checked = localStorage.getItem(REMEMBER_STORAGE_KEY) === "1" || Boolean(saved);
     }
 
     async function loadCurrentConfig({ initial = false, manual = false } = {}) {
@@ -377,89 +510,123 @@
         const response = await fetch("/__eei/config", { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         replaceState(await response.json());
-        ensureDefaults();
-        dirty = false;
         loadedOnce = true;
+        dirty = false;
         render();
-        await updatePreview(true);
-        if (manual) flash("Cargado", "ok");
+        await updatePreview({ replace: true });
+        flash(manual ? "Cargado" : "Listo", "ok");
       } catch (error) {
         loadedOnce = false;
         render();
-        flash(`Error ${error.message}`, "bad");
+        flash("Sin config", "bad");
       }
     }
 
     async function saveConfig() {
       readControls();
+      ensureDefaults();
       const token = refs.adminToken.value.trim();
-      if (!token) { refs.tokenDialog.showModal(); flash("Falta key", "bad"); return; }
-      refs.saveBtn.disabled = true;
+      if (!token) { refs.tokenDialog.showModal(); flash("Falta key", "warn"); return false; }
       setDirtyChip("Guardando", "warn");
+      refs.saveBtn.disabled = true;
       try {
         const response = await fetch("/__eei/config", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(state) });
         if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.error || `HTTP ${response.status}`); }
         replaceState(await response.json());
         dirty = false;
+        loadedOnce = true;
         lastSavedAt = new Date();
+        await updatePreview({ replace: true });
         render();
-        await updatePreview(true);
         flash("Guardado", "ok");
+        return true;
       } catch (error) {
         refs.saveBtn.disabled = false;
-        flash(`Falló ${error.message}`, "bad");
+        flash("Falló", "bad");
+        return false;
       }
     }
 
-    function applyPreset(value, update = true) {
+    async function autosaveOrAskKey() {
+      if (!refs.adminToken.value.trim()) { refs.tokenDialog.showModal(); return false; }
+      return saveConfig();
+    }
+
+    function hydrateToken() {
+      const remembered = localStorage.getItem(REMEMBER_STORAGE_KEY) === "1";
+      const saved = localStorage.getItem(TOKEN_STORAGE_KEY) || "";
+      refs.rememberToken.checked = remembered || Boolean(saved);
+      if (saved) refs.adminToken.value = saved;
+      renderTokenState();
+    }
+
+    function saveTokenLocal() {
+      const token = refs.adminToken.value.trim();
+      if (!token) return;
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      localStorage.setItem(REMEMBER_STORAGE_KEY, "1");
+      refs.rememberToken.checked = true;
+      refs.tokenDialog.close();
+      renderTokenState();
+      flash("Key guardada", "ok");
+    }
+
+    function forgetTokenLocal() {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(REMEMBER_STORAGE_KEY);
+      refs.adminToken.value = "";
+      refs.rememberToken.checked = false;
+      renderTokenState();
+    }
+
+    function renderTokenState() {
+      const hasToken = Boolean(refs.adminToken.value.trim() || localStorage.getItem(TOKEN_STORAGE_KEY));
+      refs.tokenChip.textContent = hasToken ? "Key lista" : "Sin key";
+      refs.tokenChip.className = `chip ${hasToken ? "ok" : ""}`;
+    }
+
+    function applyPreset(value, shouldRender = true) {
       ensureDefaults();
-      const now = new Date();
-      let target = now;
-      if (value !== "now") target = new Date(Date.now() + Number(value) * 60_000);
+      const minutes = value === "now" ? 0 : Number(value || 5);
+      const target = new Date(Date.now() + minutes * 60000);
       state.maintenance.enabled = true;
-      state.maintenance.severity = value === "now" || Number(value) <= 15 ? "urgent" : "planned";
-      state.maintenance.title = value === "now" || Number(value) <= 15 ? "Mantenimiento urgente" : "Mantenimiento programado";
-      state.maintenance.message = refs.message.value.trim() || DEFAULT_MESSAGE;
       state.maintenance.targetAt = toIsoWithOffset(target);
+      state.maintenance.severity = minutes <= 0 ? "emergency" : minutes <= 15 ? "urgent" : "planned";
+      state.maintenance.title = minutes <= 0 ? "Mantenimiento activo" : minutes <= 15 ? "Mantenimiento urgente" : "Mantenimiento programado";
+      state.maintenance.message = refs.message.value.trim() || DEFAULT_MESSAGE;
       markDirty();
-      render();
-      if (update) updatePreview();
+      if (shouldRender) { render(); updatePreview(); }
     }
 
     function openSchedule() {
-      const d = state.maintenance?.targetAt ? new Date(state.maintenance.targetAt) : new Date(Date.now() + 15 * 60_000);
-      refs.scheduleDate.value = dateInput(d);
-      refs.scheduleTime.value = timeInput(d);
+      ensureDefaults();
+      const base = isValidDate(state.maintenance.targetAt) ? new Date(state.maintenance.targetAt) : new Date(Date.now() + 15 * 60000);
+      refs.scheduleDate.value = dateInput(base);
+      refs.scheduleTime.value = timeInput(base);
       renderSchedulePreview();
       refs.scheduleDialog.showModal();
     }
 
     function chooseDay(day) {
-      const d = new Date();
-      if (day === "tomorrow") d.setDate(d.getDate() + 1);
-      if (day !== "custom") refs.scheduleDate.value = dateInput(d);
-      document.querySelectorAll("[data-day]").forEach((b) => b.classList.toggle("active", b.dataset.day === day));
+      const date = new Date();
+      if (day === "tomorrow") date.setDate(date.getDate() + 1);
+      refs.scheduleDate.value = dateInput(date);
       renderSchedulePreview();
     }
 
-    function chooseTime(time) {
-      if (time === "now") {
-        refs.scheduleTime.value = timeInput(new Date());
-        refs.scheduleDate.value ||= dateInput(new Date());
-      } else {
-        refs.scheduleTime.value = time;
-      }
-      document.querySelectorAll("[data-time]").forEach((b) => b.classList.toggle("active", b.dataset.time === time));
+    function chooseTime(value) {
+      if (value === "now") refs.scheduleTime.value = timeInput(new Date());
+      else refs.scheduleTime.value = value;
       renderSchedulePreview();
     }
 
     function useSchedule() {
-      const date = new Date(`${refs.scheduleDate.value}T${refs.scheduleTime.value || "00:00"}`);
-      if (Number.isNaN(date.getTime())) return;
+      const date = dateFromSchedule();
+      if (!date) return;
       ensureDefaults();
       state.maintenance.enabled = true;
       state.maintenance.targetAt = toIsoWithOffset(date);
-      state.maintenance.severity = date.getTime() - Date.now() <= 15 * 60_000 ? "urgent" : "planned";
+      state.maintenance.severity = date.getTime() - Date.now() <= 15 * 60000 ? "urgent" : "planned";
       state.maintenance.title = state.maintenance.severity === "urgent" ? "Mantenimiento urgente" : "Mantenimiento programado";
       state.maintenance.message = refs.message.value.trim() || DEFAULT_MESSAGE;
       refs.scheduleDialog.close();
@@ -469,14 +636,19 @@
     }
 
     function renderSchedulePreview() {
-      const date = new Date(`${refs.scheduleDate.value}T${refs.scheduleTime.value || "00:00"}`);
-      if (Number.isNaN(date.getTime())) { refs.schedulePreview.textContent = "—"; refs.schedulePreviewSub.textContent = "—"; return; }
-      refs.schedulePreview.textContent = new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(date);
-      refs.schedulePreviewSub.textContent = countdownTo(date);
+      const date = dateFromSchedule();
+      refs.schedulePreview.textContent = date ? formatLongDate(date) : "—";
+      refs.schedulePreviewSub.textContent = date ? countdownTo(date) : "—";
     }
 
-    async function updatePreview(replace = true) {
-      await updateEEI(state, { sandbox: true, replace });
+    function dateFromSchedule() {
+      if (!refs.scheduleDate.value || !refs.scheduleTime.value) return null;
+      const date = new Date(`${refs.scheduleDate.value}T${refs.scheduleTime.value}:00`);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    async function updatePreview(options = {}) {
+      await updateEEI(state, { sandbox: true, replace: Boolean(options.replace) });
     }
 
     async function previewBirthday() {
@@ -490,12 +662,9 @@
     }
 
     async function debugApi(kind) {
-      const endpoint = kind === "birthday"
-        ? "/__eei/signia-birthdays?debug=1"
-        : kind === "planteles"
-          ? "/__eei/signia-planteles?debug=1"
-          : `/__eei/worldcup-matches?debug=1&date=${todayInTimeZone("America/Mexico_City")}`;
-      setApiState(kind, "…", "warn", endpoint);
+      const today = todayInTimeZone("America/Mexico_City");
+      const endpoint = kind === "birthday" ? "/__eei/signia-birthdays?debug=1" : kind === "planteles" ? "/__eei/signia-planteles?debug=1" : `/__eei/worldcup-matches?debug=1&date=${encodeURIComponent(today)}`;
+      setApiState(kind, "...", "warn", endpoint);
       try {
         const response = await fetch(endpoint, { cache: "no-store", credentials: "same-origin", headers: { Accept: "application/json" } });
         const text = await response.text();
@@ -503,6 +672,10 @@
         try { payload = JSON.parse(text); } catch { payload = text; }
         rawPayload[kind] = { endpoint, ok: response.ok, status: response.status, receivedAt: new Date().toISOString(), payload };
         setApiState(kind, response.ok ? "OK" : String(response.status), response.ok ? "ok" : "bad", endpoint);
+        if (kind === "planteles") {
+          plantelesCatalog = extractPlanteles(payload);
+          renderPlanteles();
+        }
         renderHealth();
       } catch (error) {
         rawPayload[kind] = { endpoint, error: error.message, receivedAt: new Date().toISOString() };
@@ -524,7 +697,7 @@
       if (!values.length) { refs.healthChip.textContent = "—"; refs.healthChip.className = "mini-chip"; return; }
       const ok = values.filter((v) => v.ok).length;
       refs.healthChip.textContent = `${ok}/${values.length}`;
-      refs.healthChip.className = `mini-chip ${ok === values.length ? "ok" : "bad"}`;
+      refs.healthChip.className = `mini-chip ${ok === values.length ? "ok" : ok ? "warn" : "bad"}`;
     }
 
     function showRaw(kind) {
@@ -533,6 +706,25 @@
       refs.rawTitle.textContent = kind === "birthday" ? "Cumpleaños" : kind === "planteles" ? "Planteles" : "Mundial";
       refs.rawOutput.textContent = JSON.stringify(payload, null, 2);
       refs.rawDialog.showModal();
+    }
+
+    function extractPlanteles(payload) {
+      const source = Array.isArray(payload) ? payload : Array.isArray(payload?.planteles) ? payload.planteles : Array.isArray(payload?.payload?.planteles) ? payload.payload.planteles : Array.isArray(payload?.data) ? payload.data : [];
+      const byKey = new Map();
+      for (const item of source) {
+        const id = item?.id ?? item?.value ?? "";
+        const name = String(item?.name || item?.label || item?.plantel || id || "").trim();
+        if (!name) continue;
+        const key = id ? `id:${id}` : `name:${name.toLowerCase()}`;
+        if (!byKey.has(key)) byKey.set(key, { id, name, label: item?.label || name });
+      }
+      return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name, "es"));
+    }
+
+    function renderPlanteles() {
+      refs.plantelesCount.textContent = plantelesCatalog.length ? String(plantelesCatalog.length) : "—";
+      refs.plantelesCount.className = `mini-chip ${plantelesCatalog.length ? "ok" : ""}`;
+      refs.plantelesGrid.innerHTML = plantelesCatalog.length ? plantelesCatalog.map((p) => `<span class="plantel-pill">${escapeHtml(p.name)}</span>`).join("") : `<span class="plantel-pill">Sin datos</span>`;
     }
 
     function addHost() {
@@ -553,30 +745,14 @@
       refs.hostsList.querySelectorAll("[data-remove-host]").forEach((button) => button.addEventListener("click", () => { state.injection.excludeHostnamesExact.splice(Number(button.dataset.removeHost), 1); markDirty(); render(); renderHosts(); }));
     }
 
-    function saveTokenLocal() {
-      const token = refs.adminToken.value.trim();
-      if (!token) return;
-      localStorage.setItem(TOKEN_STORAGE_KEY, token);
-      localStorage.setItem(REMEMBER_STORAGE_KEY, "1");
-      refs.rememberToken.checked = true;
-      refs.tokenDialog.close();
-      flash("Key guardada", "ok");
-    }
-
-    function forgetTokenLocal() {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      localStorage.removeItem(REMEMBER_STORAGE_KEY);
-      refs.adminToken.value = "";
-      refs.rememberToken.checked = false;
-    }
-
     function applyJson() {
-      try { replaceState(JSON.parse(refs.jsonEditor.value)); ensureDefaults(); markDirty(); render(); updatePreview(); } catch (error) { flash("JSON inválido", "bad"); }
+      try { replaceState(JSON.parse(refs.jsonEditor.value)); ensureDefaults(); markDirty(); render(); updatePreview({ replace: true }); } catch { flash("JSON inválido", "bad"); }
     }
 
     function render() {
       ensureDefaults();
       syncControls();
+      renderTokenState();
       refs.message.value = state.maintenance.message || DEFAULT_MESSAGE;
       refs.messageCount.textContent = `${refs.message.value.length}/160`;
       refs.globalChip.className = `chip ${state.enabled ? "ok" : "bad"}`;
@@ -589,20 +765,21 @@
       refs.noticeSeverity.textContent = state.maintenance.enabled ? String(state.maintenance.severity || "planned").toUpperCase() : "NORMAL";
       refs.noticeTitle.textContent = state.maintenance.enabled ? (state.maintenance.title || "Mantenimiento") : "Sin mantenimiento";
       refs.noticeMessage.textContent = state.maintenance.enabled ? (state.maintenance.message || "") : "EEI listo.";
-      refs.noticeTime.textContent = state.maintenance.enabled ? maintenanceStateText() : "—";
+      refs.noticeTime.textContent = state.maintenance.enabled ? maintenanceStateText() : "Listo";
       const active = [state.campaigns?.isv?.enabled, state.birthday?.enabled, state.festivities?.mundial_2026?.enabled, state.festivities?.christmas?.enabled, state.festivities?.new_year?.enabled].filter(Boolean).length;
       refs.moduleCount.textContent = `${active} ON`;
+      refs.moduleCount.className = `mini-chip ${active ? "ok" : ""}`;
       refs.hostCount.textContent = String(state.injection?.excludeHostnamesExact?.length || 0);
       refs.isvIncludeHostnames.value = formatHostList(state.campaigns?.isv?.includeHostnames);
       refs.isvExcludeHostnames.value = formatHostList(state.campaigns?.isv?.excludeHostnames);
       refs.jsonEditor.value = JSON.stringify(state, null, 2);
       renderHealth();
+      renderPlanteles();
     }
 
     function setDirtyChip(label, tone) { refs.dirtyChip.textContent = label; refs.dirtyChip.className = `chip ${tone || ""}`; }
-    function flash(label, tone) { refs.dirtyChip.textContent = label; refs.dirtyChip.className = `chip ${tone || ""}`; setTimeout(() => render(), 1200); }
+    function flash(label, tone) { refs.dirtyChip.textContent = label; refs.dirtyChip.className = `chip ${tone || ""}`; setTimeout(render, 1200); }
     function markDirty() { dirty = true; refs.saveBtn.disabled = !loadedOnce || !dirty; }
-
     function readControls() { document.querySelectorAll("[data-bind]").forEach(writeControl); }
     function syncControls() { document.querySelectorAll("[data-bind]").forEach((control) => { const value = getPath(state, control.dataset.bind); if (control.type === "checkbox") control.checked = Boolean(value); else control.value = value ?? ""; }); }
     function writeControl(control) { let value = control.type === "checkbox" ? control.checked : control.value; if (control.type === "number") value = Number(value); setPath(state, control.dataset.bind, value); }
@@ -618,9 +795,11 @@
     function formatHostList(v) { return Array.isArray(v) ? v.join("\n") : ""; }
     function maintenanceStateText() { const d = new Date(state.maintenance.targetAt || ""); if (Number.isNaN(d.getTime())) return "Sin fecha"; return countdownTo(d); }
     function countdownTo(d) { const diff = d.getTime() - Date.now(); if (diff <= 0) return "Activa ahora"; const m = Math.round(diff/60000); if (m < 60) return `En ${m} min`; const h = Math.floor(m/60); const r = m%60; return r ? `En ${h}h ${r}m` : `En ${h}h`; }
+    function isValidDate(value) { const d = new Date(value || ""); return !Number.isNaN(d.getTime()); }
     function toIsoWithOffset(date) { const pad = (n) => String(n).padStart(2,"0"); const off = -date.getTimezoneOffset(); const sign = off >= 0 ? "+" : "-"; const abs = Math.abs(off); return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${sign}${pad(Math.floor(abs/60))}:${pad(abs%60)}`; }
     function dateInput(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
     function timeInput(d) { return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
+    function formatLongDate(d) { return new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" }).format(d); }
     function todayInTimeZone(timeZone) { const parts = new Intl.DateTimeFormat("en-CA", { timeZone, year:"numeric", month:"2-digit", day:"2-digit" }).formatToParts(new Date()); const m = Object.fromEntries(parts.map(p => [p.type,p.value])); return `${m.year}-${m.month}-${m.day}`; }
     function clone(v) { return typeof structuredClone === "function" ? structuredClone(v) : JSON.parse(JSON.stringify(v)); }
     function escapeHtml(v) { return String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
