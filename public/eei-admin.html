@@ -527,6 +527,11 @@
           </div>
           <div class="module-list">
             <div class="module">
+              <div class="icon">ISV</div>
+              <div><strong>Sistemas vivos</strong><span>Banner ISV desde isv-ev2.pages.dev.</span></div>
+              <label class="switch"><input type="checkbox" data-bind="campaigns.isv.enabled"><span class="slider"></span></label>
+            </div>
+            <div class="module">
               <div class="icon">⚙</div>
               <div><strong>Mantenimiento</strong><span>Barra breve con cuenta regresiva.</span></div>
               <label class="switch"><input type="checkbox" data-bind="maintenance.enabled"><span class="slider"></span></label>
@@ -613,6 +618,9 @@
                 <label class="field">Mundial API URL
                   <input type="text" data-bind="festivities.mundial_2026.sportsApiUrl" spellcheck="false">
                 </label>
+                <label class="field">ISV script URL
+                  <input type="text" data-bind="campaigns.isv.scriptUrl" spellcheck="false">
+                </label>
               </div>
               <p class="micro">Para producción, cumpleaños debe quedar en <strong>api</strong>. El botón de preview usa datos falsos sólo dentro del admin.</p>
             </div>
@@ -641,7 +649,7 @@
   </nav>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v4";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v5";
 
     const TOKEN_STORAGE_KEY = "eei:adminToken";
     const REMEMBER_STORAGE_KEY = "eei:rememberToken";
@@ -876,6 +884,7 @@
       refs.jsonEditor.value = JSON.stringify(state, null, 2);
 
       const activeModules = [
+        state.campaigns?.isv?.enabled,
         state.maintenance?.enabled,
         state.birthday?.enabled,
         state.festivities?.mundial_2026?.enabled,

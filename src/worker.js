@@ -1,17 +1,25 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v4";
+const EEI_ASSET_VERSION = "2026-07-01-v5";
+const ISV_DEFAULT_SCRIPT_URL = "https://isv-ev2.pages.dev/isv-banner.js";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const FOOTBALL_DATA_DEFAULT_BASE_URL = "https://api.football-data.org/v4";
 const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 4,
+  version: 5,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
     maxPixelRatio: 1.5,
     pauseWhenHidden: true
+  },
+  campaigns: {
+    isv: {
+      enabled: true,
+      scriptUrl: ISV_DEFAULT_SCRIPT_URL,
+      excludeHostnames: ["casitaiedis.edu.mx", "www.casitaiedis.edu.mx"]
+    }
   },
   maintenance: {
     enabled: true,
@@ -349,10 +357,12 @@ async function maybeInject(request, env, response) {
   }
 
   const engineUrl = `/__eei/engine.js?v=${encodeURIComponent(EEI_ASSET_VERSION)}&autostart=1&config=%2F__eei%2Fconfig`;
+  const isvInjection = buildIsvInjection(request, config);
   const injection = [
     '<script>window.__EEI_BOOT__={configEndpoint:"/__eei/config"};</script>',
+    isvInjection,
     `<script type="module" src="${engineUrl}"></script>`
-  ].join("");
+  ].filter(Boolean).join("");
 
   const rewritten = new HTMLRewriter()
     .on("body", new BodyInjector(injection))
@@ -361,12 +371,49 @@ async function maybeInject(request, env, response) {
   const headers = new Headers(rewritten.headers);
   headers.delete("Content-Length");
   headers.set("X-EEI-Injected", "1");
+  if (isvInjection) {
+    headers.set("X-ISV-Gateway-Injected", "1");
+  }
 
   return new Response(rewritten.body, {
     status: rewritten.status,
     statusText: rewritten.statusText,
     headers
   });
+}
+
+function buildIsvInjection(request, config) {
+  const isv = config.campaigns?.isv || {};
+  if (isv.enabled === false) {
+    return "";
+  }
+
+  const hostname = new URL(request.url).hostname.toLowerCase();
+  const excludedHostnames = Array.isArray(isv.excludeHostnames) ? isv.excludeHostnames : [];
+  if (excludedHostnames.map((host) => String(host).toLowerCase()).includes(hostname)) {
+    return "";
+  }
+
+  let scriptUrl;
+  try {
+    scriptUrl = new URL(isv.scriptUrl || ISV_DEFAULT_SCRIPT_URL);
+  } catch {
+    return "";
+  }
+
+  if (scriptUrl.protocol !== "https:" && scriptUrl.protocol !== "http:") {
+    return "";
+  }
+
+  return `<script src="${escapeHtmlAttribute(scriptUrl.toString())}" defer data-isv-campaign="true" data-eei-gateway="true"></script>`;
+}
+
+function escapeHtmlAttribute(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function routeAllowed(request, config) {
@@ -468,7 +515,20 @@ function deepMerge(base, override) {
 function normalizeRuntimeConfig(config) {
   const output = structuredClone(config);
   const storedVersion = Number(output.version || 0);
-  output.version = Math.max(4, storedVersion || 0);
+  output.version = Math.max(5, storedVersion || 0);
+
+  if (!output.campaigns || typeof output.campaigns !== "object") {
+    output.campaigns = structuredClone(DEFAULT_CONFIG.campaigns);
+  }
+  if (!output.campaigns.isv || typeof output.campaigns.isv !== "object") {
+    output.campaigns.isv = structuredClone(DEFAULT_CONFIG.campaigns.isv);
+  }
+  if (!output.campaigns.isv.scriptUrl) {
+    output.campaigns.isv.scriptUrl = ISV_DEFAULT_SCRIPT_URL;
+  }
+  if (!Array.isArray(output.campaigns.isv.excludeHostnames)) {
+    output.campaigns.isv.excludeHostnames = ["casitaiedis.edu.mx", "www.casitaiedis.edu.mx"];
+  }
 
   if (output?.festivities?.mundial_2026) {
     const current = String(output.festivities.mundial_2026.sportsApiUrl || "");

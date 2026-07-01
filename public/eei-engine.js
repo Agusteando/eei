@@ -1,16 +1,23 @@
 import * as THREE from "./vendor/three.module.js";
 
-const EEI_VERSION = "0.4.0";
+const EEI_VERSION = "0.5.0";
 const MAX_Z_INDEX = "2147483647";
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
 export const DEFAULT_CONFIG = {
-  version: 4,
+  version: 5,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
     maxPixelRatio: 1.5,
     pauseWhenHidden: true
+  },
+  campaigns: {
+    isv: {
+      enabled: true,
+      scriptUrl: "https://isv-ev2.pages.dev/isv-banner.js",
+      excludeHostnames: ["casitaiedis.edu.mx", "www.casitaiedis.edu.mx"]
+    }
   },
   maintenance: {
     enabled: true,

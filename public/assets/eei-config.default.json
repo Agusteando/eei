@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 5,
   "enabled": true,
   "assetsBaseUrl": "auto",
   "performance": {
@@ -34,9 +34,15 @@
     },
     "mundial_2026": {
       "enabled": false,
-      "intensity": 0.72,
+      "intensity": 0.42,
       "sportsApiUrl": "/__eei/worldcup-matches",
-      "priorityTeam": "Mexico"
+      "priorityTeam": "Mexico",
+      "compactPin": true,
+      "hidePinPerDay": true,
+      "ballCount": 4,
+      "ballLifetimeMs": 18000,
+      "ballAutoExitAfterMs": 10500,
+      "ballInteraction": true
     }
   },
   "assets": {
@@ -52,6 +58,16 @@
       "trionda": "textures/trionda-equirectangular.png",
       "balloons": "textures/balloon-atlas.png",
       "particles": "textures/particle-atlas.png"
+    }
+  },
+  "campaigns": {
+    "isv": {
+      "enabled": true,
+      "scriptUrl": "https://isv-ev2.pages.dev/isv-banner.js",
+      "excludeHostnames": [
+        "casitaiedis.edu.mx",
+        "www.casitaiedis.edu.mx"
+      ]
     }
   }
 }
