@@ -1,1 +1,1 @@
-Aclarar selección de notificaciones de cumpleaños por plantel
+Rediseña admin con Font Awesome, carga de config no-cache y etiquetas avanzadas claras

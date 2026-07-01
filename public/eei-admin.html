@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>EEI</title>
+  <title>EEI Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root {
       color-scheme: light;
@@ -42,10 +43,12 @@
     button, input, textarea, select { font: inherit; }
     button { cursor: pointer; border: 0; }
     input, textarea, select { color: var(--ink); }
-    svg { display: block; }
+    .fa-solid, .fa-regular { line-height: 1; }
+    .icon-box .fa-solid, .icon-box .fa-regular { font-size: 15px; }
+    .btn .fa-solid, .btn .fa-regular, .preset .fa-solid, .preset .fa-regular { font-size: 13px; }
 
     .page {
-      width: min(calc(100% - 28px), 1680px);
+      width: min(calc(100% - 32px), 1480px);
       margin: 0 auto;
       padding: max(14px, env(safe-area-inset-top)) 0 calc(28px + env(safe-area-inset-bottom));
     }
@@ -62,7 +65,7 @@
     }
 
     .topbar-inner {
-      width: min(calc(100% - 28px), 1680px);
+      width: min(calc(100% - 32px), 1480px);
       margin: 0 auto;
       display: grid;
       grid-template-columns: 1fr auto;
@@ -120,7 +123,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(480px, 0.92fr) minmax(520px, 1.08fr);
+      grid-template-columns: minmax(500px, 0.96fr) minmax(560px, 1.04fr);
       gap: 14px;
       align-items: start;
     }
@@ -170,8 +173,6 @@
       flex: 0 0 auto;
     }
 
-    .ico { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
-    .ico.sm { width: 17px; height: 17px; }
 
     .card-body {
       padding: 16px;
@@ -258,7 +259,7 @@
       outline: none;
       font-weight: 720;
     }
-    textarea { resize: vertical; min-height: 78px; line-height: 1.4; }
+    textarea { resize: vertical; min-height: 70px; line-height: 1.4; }
     input:focus, textarea:focus, select:focus { border-color: #83c5ba; box-shadow: 0 0 0 4px rgba(0, 121, 107, .10); }
 
     .action-row { display: grid; grid-template-columns: .8fr 1fr .8fr; gap: 10px; }
@@ -429,44 +430,19 @@
   </style>
 </head>
 <body>
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 8L9 4l-3 8H2"/></symbol>
-    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.4 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.4a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
-    <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 7h1"/><path d="M14 7h1"/><path d="M9 11h1"/><path d="M14 11h1"/><path d="M9 15h1"/><path d="M14 15h1"/></symbol>
-    <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/></symbol>
-    <symbol id="i-check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
-    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
-    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
-    <symbol id="i-code" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></symbol>
-    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><rect x="2" y="2" width="13" height="13" rx="2"/></symbol>
-    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
-    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8"/><path d="M16.5 8A2.5 2.5 0 1 0 12 6.5V8"/></symbol>
-    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20"/><path d="M12 2a15 15 0 0 0 0 20"/></symbol>
-    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></symbol>
-    <symbol id="i-key" viewBox="0 0 24 24"><path d="M21 2 11 12"/><circle cx="7.5" cy="16.5" r="5.5"/><path d="M15 8h4v4"/></symbol>
-    <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7Z"/></symbol>
-    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></symbol>
-    <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></symbol>
-    <symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01"/><path d="M7 17h.01"/></symbol>
-    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.1 2.1 0 1 1-2.97 2.97l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.65V22a2.1 2.1 0 1 1-4.2 0v-.08a1.8 1.8 0 0 0-1.1-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05A2.1 2.1 0 1 1 3.4 17.7l.05-.05a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.65-1.1H2a2.1 2.1 0 1 1 0-4.2h.08a1.8 1.8 0 0 0 1.65-1.1 1.8 1.8 0 0 0-.36-1.98l-.05-.05A2.1 2.1 0 1 1 6.3 3.4l.05.05a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 9.4 2.16V2a2.1 2.1 0 1 1 4.2 0v.08a1.8 1.8 0 0 0 1.1 1.65 1.8 1.8 0 0 0 1.98-.36l.05-.05A2.1 2.1 0 1 1 19.7 6.3l-.05.05a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.1H22a2.1 2.1 0 1 1 0 4.2h-.08a1.8 1.8 0 0 0-1.65 1.1Z"/></symbol>
-    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
-    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></symbol>
-    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></symbol>
-    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
-  </svg>
 
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
         <div class="mark">EEI</div>
         <div>
-          <h1>EEI</h1>
-          <div class="substatus"><span id="lastSaved">Cargando</span><span id="globalText">—</span><span id="dirtyText">—</span></div>
+          <h1>EEI Admin</h1>
+          <div class="substatus"><span id="lastSaved">Cargando config</span><span id="globalText">—</span><span id="dirtyText">—</span></div>
         </div>
       </div>
       <div class="top-actions">
-        <button class="btn secondary" type="button" id="openTokenBtn"><svg class="ico sm"><use href="#i-key"></use></svg>Key</button>
-        <button class="btn header-save" type="button" id="saveBtn"><svg class="ico sm"><use href="#i-save"></use></svg>Guardar</button>
+        <button class="btn secondary" type="button" id="openTokenBtn"><i class="fa-solid fa-key" aria-hidden="true"></i>Key</button>
+        <button class="btn header-save" type="button" id="saveBtn"><i class="fa-regular fa-floppy-disk" aria-hidden="true"></i>Guardar</button>
       </div>
     </div>
   </header>
@@ -476,39 +452,39 @@
       <div class="stack">
         <section class="card" id="maintenanceCard">
           <div class="card-head">
-            <div class="title"><div class="icon-box"><svg class="ico"><use href="#i-alert"></use></svg></div><h2>Mantenimiento</h2></div>
+            <div class="title"><div class="icon-box"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></div><h2>Mantenimiento</h2></div>
             <span class="pill" id="maintChip">OFF</span>
           </div>
           <div class="card-body">
             <div class="preset-grid">
-              <button class="preset primary" type="button" data-preset="now"><strong><svg class="ico sm"><use href="#i-play"></use></svg>Ahora</strong><span>Inmediato</span></button>
+              <button class="preset primary" type="button" data-preset="now"><strong><i class="fa-solid fa-play" aria-hidden="true"></i>Ahora</strong><span>Inmediato</span></button>
               <button class="preset" type="button" data-preset="5"><strong>5 min</strong><span>Urgente</span></button>
               <button class="preset" type="button" data-preset="15"><strong>15 min</strong><span>Aviso corto</span></button>
               <button class="preset" type="button" data-preset="30"><strong>30 min</strong><span>Programado</span></button>
-              <button class="preset" type="button" id="openScheduleBtn"><strong><svg class="ico sm"><use href="#i-calendar"></use></svg>Programar</strong><span>Fecha/hora</span></button>
+              <button class="preset" type="button" id="openScheduleBtn"><strong><i class="fa-regular fa-calendar-days" aria-hidden="true"></i>Programar</strong><span>Fecha/hora</span></button>
             </div>
             <div class="field">
               <div class="label-row"><span>Mensaje</span><span id="messageCount">0/160</span></div>
               <textarea id="maintenanceMessage" maxlength="160" rows="3"></textarea>
             </div>
             <div class="action-row">
-              <button class="btn secondary" type="button" id="previewMaintenanceBtn"><svg class="ico sm"><use href="#i-eye"></use></svg>Vista</button>
-              <button class="btn" type="button" id="activateMaintenanceBtn"><svg class="ico sm"><use href="#i-play"></use></svg>Activar</button>
-              <button class="btn danger" type="button" id="disableMaintenanceBtn"><svg class="ico sm"><use href="#i-power"></use></svg>Apagar</button>
+              <button class="btn secondary" type="button" id="previewMaintenanceBtn"><i class="fa-regular fa-eye" aria-hidden="true"></i>Vista</button>
+              <button class="btn" type="button" id="activateMaintenanceBtn"><i class="fa-solid fa-play" aria-hidden="true"></i>Activar</button>
+              <button class="btn danger" type="button" id="disableMaintenanceBtn"><i class="fa-solid fa-power-off" aria-hidden="true"></i>Apagar</button>
             </div>
           </div>
         </section>
 
         <section class="card">
           <div class="card-head">
-            <div class="title"><div class="icon-box"><svg class="ico"><use href="#i-gift"></use></svg></div><h2>Cumpleaños</h2></div>
+            <div class="title"><div class="icon-box"><i class="fa-solid fa-gift" aria-hidden="true"></i></div><h2>Cumpleaños</h2></div>
             <span class="pill" id="birthdayModeChip">—</span>
           </div>
           <div class="card-body">
             <div class="plantel-summary">
               <div class="plantel-count" id="plantelCountBox">—</div>
               <div><strong>Planteles</strong><div class="substatus" style="margin-top:4px"><span id="plantelSourceText">Signia</span><span id="plantelSelectionText">Todos por defecto</span></div></div>
-              <button class="btn secondary" type="button" id="refreshPlantelesBtn"><svg class="ico sm"><use href="#i-activity"></use></svg>Probar</button>
+              <button class="btn secondary" type="button" id="refreshPlantelesBtn"><i class="fa-solid fa-wave-square" aria-hidden="true"></i>Probar</button>
             </div>
             <div class="plantel-grid" id="plantelesGrid"></div>
           </div>
@@ -516,7 +492,7 @@
 
         <section class="card">
           <div class="card-head">
-            <div class="title"><div class="icon-box"><svg class="ico"><use href="#i-sliders"></use></svg></div><h2>Módulos</h2></div>
+            <div class="title"><div class="icon-box"><i class="fa-solid fa-sliders" aria-hidden="true"></i></div><h2>Módulos</h2></div>
             <span class="pill" id="moduleCount">0 ON</span>
           </div>
           <div class="card-body rows">
@@ -533,7 +509,7 @@
       <div class="stack">
         <section class="card">
           <div class="card-head">
-            <div class="title"><div class="icon-box"><svg class="ico"><use href="#i-eye"></use></svg></div><h2>Vista en sitio</h2></div>
+            <div class="title"><div class="icon-box"><i class="fa-regular fa-eye" aria-hidden="true"></i></div><h2>Vista en sitio</h2></div>
             <span class="pill ok" id="previewChip"><span class="dot"></span>Activo</span>
           </div>
           <div class="card-body">
@@ -546,15 +522,15 @@
               <div class="preview-footer"><span class="status-badge"><span class="dot"></span><span id="noticeTime">Listo</span></span></div>
             </div>
             <div class="two-actions">
-              <button class="btn secondary" type="button" id="previewBirthdayBtn"><svg class="ico sm"><use href="#i-gift"></use></svg>Probar cumple</button>
-              <button class="btn secondary" type="button" id="previewMundialBtn"><svg class="ico sm"><use href="#i-globe"></use></svg>Probar Mundial</button>
+              <button class="btn secondary" type="button" id="previewBirthdayBtn"><i class="fa-solid fa-gift" aria-hidden="true"></i>Probar cumple</button>
+              <button class="btn secondary" type="button" id="previewMundialBtn"><i class="fa-solid fa-globe" aria-hidden="true"></i>Probar Mundial</button>
             </div>
           </div>
         </section>
 
         <section class="card">
           <div class="card-head">
-            <div class="title"><div class="icon-box"><svg class="ico"><use href="#i-server"></use></svg></div><h2>Integraciones</h2></div>
+            <div class="title"><div class="icon-box"><i class="fa-solid fa-link" aria-hidden="true"></i></div><h2>Integraciones</h2></div>
             <span class="pill" id="healthChip">—</span>
           </div>
           <div class="card-body rows">
@@ -562,16 +538,16 @@
             <div class="row"><div><strong>Planteles</strong><span id="plantelesEndpoint">/__eei/signia-planteles</span></div><button class="pill" id="plantelesStatus" type="button">Probar</button></div>
             <div class="row"><div><strong>Mundial</strong><span id="mundialEndpoint">/__eei/worldcup-matches</span></div><button class="pill" id="mundialStatus" type="button">Probar</button></div>
             <div class="three-actions">
-              <button class="btn secondary" type="button" id="debugBirthdayBtn"><svg class="ico sm"><use href="#i-gift"></use></svg>Cumples</button>
-              <button class="btn secondary" type="button" id="debugPlantelesBtn"><svg class="ico sm"><use href="#i-building"></use></svg>Planteles</button>
-              <button class="btn secondary" type="button" id="debugMundialBtn"><svg class="ico sm"><use href="#i-globe"></use></svg>Mundial</button>
+              <button class="btn secondary" type="button" id="debugBirthdayBtn"><i class="fa-solid fa-gift" aria-hidden="true"></i>Cumples</button>
+              <button class="btn secondary" type="button" id="debugPlantelesBtn"><i class="fa-solid fa-building" aria-hidden="true"></i>Planteles</button>
+              <button class="btn secondary" type="button" id="debugMundialBtn"><i class="fa-solid fa-globe" aria-hidden="true"></i>Mundial</button>
             </div>
           </div>
         </section>
 
         <section class="card">
           <div class="card-head">
-            <div class="title"><div class="icon-box"><svg class="ico"><use href="#i-shield"></use></svg></div><h2>Hosts</h2></div>
+            <div class="title"><div class="icon-box"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></div><h2>Hosts</h2></div>
             <button class="pill" type="button" id="openHostsBtn">Editar</button>
           </div>
           <div class="card-body">
@@ -582,30 +558,30 @@
     </section>
 
     <details class="card" id="advancedCard" style="margin-top:14px">
-      <summary><span class="title"><span class="icon-box"><svg class="ico"><use href="#i-settings"></use></svg></span><span>Avanzado</span></span><svg class="ico sm"><use href="#i-chevron"></use></svg></summary>
+      <summary><span class="title"><span class="icon-box"><i class="fa-solid fa-gear" aria-hidden="true"></i></span><span>Avanzado</span></span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary>
       <div class="advanced-body">
         <div class="advanced-grid">
           <div class="field"><div class="label-row"><span>Modo cumpleaños</span></div><select data-bind="birthday.mode"><option value="api">api</option><option value="mock">mock</option></select></div>
           <div class="field"><div class="label-row"><span>Equipo Mundial</span></div><input type="text" data-bind="festivities.mundial_2026.priorityTeam"></div>
           <div class="field"><div class="label-row"><span>Duración fuegos</span></div><input type="number" min="2500" step="500" data-bind="festivities.new_year.durationMs"></div>
           <div class="field"><div class="label-row"><span>Birthday toast ms</span></div><input type="number" min="2000" step="500" data-bind="birthday.toastDurationMs"></div>
-          <div class="field wide"><div class="label-row"><span>Cumples API</span></div><input type="text" data-bind="birthday.apiUrl" spellcheck="false"></div>
-          <div class="field wide"><div class="label-row"><span>Planteles API</span></div><input type="text" data-bind="birthday.plantelesApiUrl" spellcheck="false"></div>
-          <div class="field wide"><div class="label-row"><span>Mundial API</span></div><input type="text" data-bind="festivities.mundial_2026.sportsApiUrl" spellcheck="false"></div>
-          <div class="field wide"><div class="label-row"><span>ISV script</span></div><input type="text" data-bind="campaigns.isv.scriptUrl" spellcheck="false"></div>
-          <div class="field wide"><div class="label-row"><span>ISV incluir</span></div><textarea id="isvIncludeHostnames" rows="4" spellcheck="false"></textarea></div>
-          <div class="field wide"><div class="label-row"><span>ISV excluir</span></div><textarea id="isvExcludeHostnames" rows="4" spellcheck="false"></textarea></div>
+          <div class="field wide"><div class="label-row"><span>Endpoint cumpleaños</span></div><input type="text" data-bind="birthday.apiUrl" spellcheck="false"></div>
+          <div class="field wide"><div class="label-row"><span>Endpoint planteles</span></div><input type="text" data-bind="birthday.plantelesApiUrl" spellcheck="false"></div>
+          <div class="field wide"><div class="label-row"><span>Endpoint Mundial</span></div><input type="text" data-bind="festivities.mundial_2026.sportsApiUrl" spellcheck="false"></div>
+          <div class="field wide"><div class="label-row"><span>Script ISV</span></div><input type="text" data-bind="campaigns.isv.scriptUrl" spellcheck="false"></div>
+          <div class="field wide"><div class="label-row"><span>Mostrar ISV sólo en estos hosts</span></div><textarea id="isvIncludeHostnames" rows="2" spellcheck="false" placeholder="Vacío = todos los hosts"></textarea></div>
+          <div class="field wide"><div class="label-row"><span>Ocultar ISV en estos hosts</span></div><textarea id="isvExcludeHostnames" rows="2" spellcheck="false" placeholder="host.casitaapps.com"></textarea></div>
           <div class="field wide"><div class="label-row"><span>JSON</span></div><textarea id="jsonEditor" class="json-editor" spellcheck="false"></textarea></div>
-          <div class="field wide" style="align-self:end"><div class="two-actions"><button class="btn secondary" type="button" id="applyJsonBtn"><svg class="ico sm"><use href="#i-check"></use></svg>Aplicar</button><button class="btn secondary" type="button" id="formatJsonBtn"><svg class="ico sm"><use href="#i-code"></use></svg>Formatear</button></div></div>
+          <div class="field wide" style="align-self:end"><div class="two-actions"><button class="btn secondary" type="button" id="applyJsonBtn"><i class="fa-solid fa-check" aria-hidden="true"></i>Aplicar</button><button class="btn secondary" type="button" id="formatJsonBtn"><i class="fa-solid fa-code" aria-hidden="true"></i>Formatear</button></div></div>
         </div>
       </div>
     </details>
   </main>
 
-  <div class="mobile-save"><button class="btn" type="button" id="mobileSaveBtn"><svg class="ico sm"><use href="#i-save"></use></svg>Guardar</button></div>
+  <div class="mobile-save"><button class="btn" type="button" id="mobileSaveBtn"><i class="fa-regular fa-floppy-disk" aria-hidden="true"></i>Guardar</button></div>
 
   <dialog id="tokenDialog">
-    <div class="dialog-head"><h3>Key</h3><button class="xbtn" type="button" data-close-dialog><svg class="ico sm"><use href="#i-x"></use></svg></button></div>
+    <div class="dialog-head"><h3>Key</h3><button class="xbtn" type="button" data-close-dialog><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
     <div class="dialog-body">
       <div class="field"><div class="label-row"><span>Admin key</span></div><input id="adminToken" type="password" autocomplete="off"></div>
       <label class="row" style="grid-template-columns:auto 1fr"><input id="rememberToken" type="checkbox" style="width:18px;min-height:18px"><div><strong>Recordar</strong><span>Este navegador</span></div></label>
@@ -614,7 +590,7 @@
   </dialog>
 
   <dialog id="scheduleDialog">
-    <div class="dialog-head"><h3>Programar</h3><button class="xbtn" type="button" data-close-dialog><svg class="ico sm"><use href="#i-x"></use></svg></button></div>
+    <div class="dialog-head"><h3>Programar</h3><button class="xbtn" type="button" data-close-dialog><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
     <div class="dialog-body">
       <div class="seg"><button type="button" data-day="today">Hoy</button><button type="button" data-day="tomorrow">Mañana</button><button type="button" data-time="now">Ahora</button></div>
       <div class="seg"><button type="button" data-time="06:00">06:00</button><button type="button" data-time="22:00">22:00</button><button type="button" data-time="23:00">23:00</button></div>
@@ -625,12 +601,12 @@
   </dialog>
 
   <dialog id="rawDialog">
-    <div class="dialog-head"><h3 id="rawTitle">Respuesta</h3><button class="xbtn" type="button" data-close-dialog><svg class="ico sm"><use href="#i-x"></use></svg></button></div>
-    <div class="dialog-body"><pre class="raw" id="rawOutput"></pre><button class="btn secondary" id="copyRawBtn" type="button"><svg class="ico sm"><use href="#i-copy"></use></svg>Copiar</button></div>
+    <div class="dialog-head"><h3 id="rawTitle">Respuesta</h3><button class="xbtn" type="button" data-close-dialog><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+    <div class="dialog-body"><pre class="raw" id="rawOutput"></pre><button class="btn secondary" id="copyRawBtn" type="button"><i class="fa-regular fa-copy" aria-hidden="true"></i>Copiar</button></div>
   </dialog>
 
   <dialog id="hostsDialog">
-    <div class="dialog-head"><h3>Hosts bloqueados</h3><button class="xbtn" type="button" data-close-dialog><svg class="ico sm"><use href="#i-x"></use></svg></button></div>
+    <div class="dialog-head"><h3>Hosts bloqueados</h3><button class="xbtn" type="button" data-close-dialog><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
     <div class="dialog-body">
       <div class="host-list" id="hostsList"></div>
       <div class="dialog-two"><input id="newHostInput" type="text" placeholder="subdominio.casitaapps.com" spellcheck="false"><button class="btn" type="button" id="addHostBtn">Agregar</button></div>
@@ -638,17 +614,18 @@
   </dialog>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v18";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v19";
 
     const TOKEN_STORAGE_KEY = "eei:adminToken";
     const REMEMBER_STORAGE_KEY = "eei:rememberToken";
-    const DEFAULT_MESSAGE = "La plataforma entrara en una ventana breve de servicio.";
+    const DEFAULT_MESSAGE = "La plataforma entrará en una ventana breve de servicio.";
     const SAMPLE_BIRTHDAY = { id: "preview", name: "Colaborador Preview", puesto: "Equipo EEI", plantel: "Sandbox", cumpleanos: "01-01" };
 
     const state = clone(DEFAULT_CONFIG);
     let loadedOnce = false;
     let dirty = false;
     let lastSavedAt = null;
+    let configLoadedAt = null;
     const rawPayload = { birthday: null, planteles: null, mundial: null };
     const health = { birthday: null, planteles: null, mundial: null };
     let plantelesCache = [];
@@ -725,18 +702,20 @@
     async function loadCurrentConfig({ initial = false } = {}) {
       setDirty("Cargando", "warn");
       try {
-        const response = await fetch("/__eei/config", { cache: "no-store" });
+        const response = await fetch(`/__eei/config?adminLoad=${Date.now()}`, { cache: "no-store", headers: { "Cache-Control": "no-cache", "Accept": "application/json" } });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         replaceState(await response.json());
         loadedOnce = true;
+        configLoadedAt = new Date();
         dirty = false;
         render();
         await updatePreview({ replace: true });
         setDirty(initial ? "Listo" : "Cargado", "ok");
-      } catch {
+      } catch (error) {
         loadedOnce = false;
         render();
-        setDirty("Sin config", "bad");
+        setDirty("No cargó", "bad");
+        console.error("EEI config load failed", error);
       }
     }
 
@@ -964,7 +943,7 @@
 
       refs.globalText.textContent = state.enabled ? "Activo" : "Apagado";
       refs.dirtyText.textContent = dirty ? "Sin guardar" : "Sin cambios";
-      refs.lastSaved.textContent = lastSavedAt ? `Guardado ${timeShort(lastSavedAt)}` : loadedOnce ? "Cargado" : "No guardado";
+      refs.lastSaved.textContent = lastSavedAt ? `Guardado ${timeShort(lastSavedAt)}` : configLoadedAt ? `Config ${timeShort(configLoadedAt)}` : loadedOnce ? "Config cargada" : "Cargando config";
       refs.saveBtn.disabled = !loadedOnce || !dirty;
       refs.mobileSaveBtn.disabled = !loadedOnce || !dirty;
 
@@ -1000,7 +979,7 @@
 
     function renderHosts() {
       const hosts = state.injection?.excludeHostnamesExact || [];
-      refs.hostsList.innerHTML = hosts.length ? hosts.map((host) => `<div class="host-chip"><span>${escapeHtml(host)}</span><button type="button" data-remove-host="${escapeAttribute(host)}"><svg class="ico sm"><use href="#i-x"></use></svg></button></div>`).join("") : `<div class="row"><div><strong>Sin hosts</strong><span>—</span></div></div>`;
+      refs.hostsList.innerHTML = hosts.length ? hosts.map((host) => `<div class="host-chip"><span>${escapeHtml(host)}</span><button type="button" data-remove-host="${escapeAttribute(host)}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>`).join("") : `<div class="row"><div><strong>Sin hosts</strong><span>—</span></div></div>`;
       refs.hostsList.querySelectorAll("[data-remove-host]").forEach((btn) => btn.addEventListener("click", () => removeHost(btn.dataset.removeHost)));
     }
 

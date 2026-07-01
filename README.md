@@ -1,9 +1,8 @@
-# EEI Control v18
+EEI Control v19
 
-Ajusta el texto del selector de planteles para cumpleaños.
-
-## Cambios
-
-- Cambia el título del modal de "Cumples por plantel" a "Notificaciones de cumpleaños".
-- Agrega texto mínimo: "Selecciona de qué planteles deseas recibir notificaciones de cumpleaños."
-- Actualiza cache/versiones a v18.
+- Admin ahora carga /__eei/config con cache bust y muestra hora de config cargada.
+- Reemplaza SVG sprite manual por Font Awesome Free via CDN.
+- Cambia etiquetas ambiguas ISV incluir/excluir por labels operativas.
+- Reduce textareas ISV.
+- Default de mantenimiento queda apagado para evitar estado falso si no hay config.
+- Actualiza assets a 2026-07-01-v19.

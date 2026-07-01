@@ -1,5 +1,5 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v18";
+const EEI_ASSET_VERSION = "2026-07-01-v19";
 const ISV_DEFAULT_SCRIPT_URL = "https://isv-ev2.pages.dev/isv-banner.js";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const SIGNIA_DEFAULT_PLANTELES_URL = "https://signia.casitaapps.com/api/planteles/list";
@@ -8,7 +8,7 @@ const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 18,
+  version: 19,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -27,9 +27,9 @@ const DEFAULT_CONFIG = {
     }
   },
   maintenance: {
-    enabled: true,
+    enabled: false,
     title: "Mantenimiento programado",
-    message: "La plataforma entrara en una ventana breve de servicio.",
+    message: "La plataforma entrará en una ventana breve de servicio.",
     targetAt: "2026-07-01T03:00:00-06:00",
     severity: "planned"
   },
