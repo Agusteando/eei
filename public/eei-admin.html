@@ -2,373 +2,275 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EEI Command Center</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23103f3b'/%3E%3Cpath d='M14 18h36v8H24v7h21v8H24v7h27v8H14z' fill='%23fff7ed'/%3E%3C/svg%3E">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>EEI Admin</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f766e'/%3E%3Cpath d='M16 18h32v7H25v7h19v7H25v7h24v7H16z' fill='%23fff7ed'/%3E%3C/svg%3E">
   <style>
     :root {
       color-scheme: light;
-      --ink: #111827;
-      --muted: #667085;
-      --line: #d9e0e7;
-      --paper: #f7f8f5;
-      --panel: rgba(255, 255, 255, 0.88);
+      --bg: #f6f3ec;
+      --bg2: #eef7f2;
+      --card: rgba(255, 255, 255, 0.82);
+      --card-solid: #ffffff;
+      --ink: #14201f;
+      --muted: #6b756f;
+      --line: rgba(20, 32, 31, 0.12);
       --teal: #0f766e;
-      --teal-dark: #103f3b;
-      --coral: #ef6b5b;
-      --gold: #c48a2c;
-      --blue: #2563eb;
-      --shadow: 0 22px 70px rgba(17, 24, 39, 0.14);
+      --teal-strong: #0b4f49;
+      --mint: #dff4ec;
+      --cream: #fff8ec;
+      --gold: #b9852f;
+      --coral: #e76757;
+      --shadow: 0 22px 70px rgba(15, 44, 40, 0.16);
+      --radius: 24px;
+      --radius-sm: 16px;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html,
-    body {
-      min-height: 100%;
-    }
+    html, body { min-height: 100%; }
 
     body {
       margin: 0;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(247, 248, 245, 0.95)),
-        repeating-linear-gradient(90deg, rgba(17, 24, 39, 0.035) 0, rgba(17, 24, 39, 0.035) 1px, transparent 1px, transparent 72px),
-        var(--paper);
+        radial-gradient(circle at 18% 0%, rgba(15, 118, 110, 0.16), transparent 34vw),
+        radial-gradient(circle at 92% 12%, rgba(185, 133, 47, 0.12), transparent 32vw),
+        linear-gradient(160deg, var(--bg), var(--bg2));
       color: var(--ink);
-      letter-spacing: 0;
+      letter-spacing: -0.01em;
     }
 
-    button,
-    input,
-    textarea,
-    select {
-      font: inherit;
-    }
-
-    form {
-      margin: 0;
-    }
-
-    button {
-      border: 0;
-      cursor: pointer;
-    }
+    button, input, textarea, select { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    input, textarea, select { color: var(--ink); }
 
     .app {
-      min-height: 100vh;
-      display: grid;
-      grid-template-rows: auto 1fr;
+      width: min(100%, 1120px);
+      margin: 0 auto;
+      padding: max(18px, env(safe-area-inset-top)) 16px calc(108px + env(safe-area-inset-bottom));
     }
 
-    .top {
-      position: sticky;
-      top: 0;
-      z-index: 20;
+    .hero {
+      display: grid;
+      gap: 16px;
+      padding: 8px 2px 18px;
+    }
+
+    .hero-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 18px;
-      padding: 18px clamp(18px, 3vw, 38px);
-      border-bottom: 1px solid rgba(17, 24, 39, 0.09);
-      background: rgba(247, 248, 245, 0.88);
-      backdrop-filter: blur(18px);
+      gap: 12px;
     }
 
     .brand {
-      display: grid;
-      gap: 2px;
-      min-width: 0;
-    }
-
-    .brand span {
-      font-size: 11px;
-      text-transform: uppercase;
-      font-weight: 850;
-      color: var(--teal);
-    }
-
-    .brand h1 {
-      margin: 0;
-      font-size: clamp(20px, 2.5vw, 32px);
-      line-height: 1.05;
-      letter-spacing: 0;
-    }
-
-    .top-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+      min-width: 0;
+      gap: 12px;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 950;
+      background: linear-gradient(135deg, var(--teal), var(--teal-strong));
+      box-shadow: 0 12px 28px rgba(15, 118, 110, 0.25);
+      flex: 0 0 auto;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      font-size: clamp(24px, 7vw, 44px);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+    }
+
+    .eyebrow {
+      margin-bottom: 3px;
+      font-size: 11px;
+      line-height: 1.1;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--teal);
+      font-weight: 900;
     }
 
     .status {
-      min-height: 36px;
+      min-height: 34px;
+      max-width: 48vw;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      border: 1px solid rgba(15, 118, 110, 0.22);
-      background: #eef8f5;
-      color: var(--teal-dark);
-      padding: 0 12px;
+      padding: 0 11px;
       border-radius: 999px;
+      border: 1px solid rgba(15, 118, 110, 0.2);
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--teal-strong);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 850;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 8px 24px rgba(20, 32, 31, 0.06);
     }
 
     .dot {
       width: 8px;
       height: 8px;
-      border-radius: 99px;
+      border-radius: 999px;
       background: var(--teal);
       box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+      flex: 0 0 auto;
     }
 
-    .btn {
-      min-height: 38px;
-      border-radius: 8px;
-      padding: 0 14px;
-      background: #111827;
-      color: white;
-      font-weight: 850;
-      box-shadow: 0 12px 28px rgba(17, 24, 39, 0.16);
+    .status.warn {
+      color: #9f3528;
+      border-color: rgba(231, 103, 87, 0.32);
+      background: #fff0ed;
     }
 
-    .btn.secondary {
-      color: #111827;
-      background: white;
-      border: 1px solid var(--line);
-      box-shadow: none;
+    .status.warn .dot { background: var(--coral); box-shadow: 0 0 0 4px rgba(231, 103, 87, 0.14); }
+
+    .status.loading .dot { background: var(--gold); box-shadow: 0 0 0 4px rgba(185, 133, 47, 0.14); }
+
+    .hint {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.42;
+      max-width: 720px;
     }
 
-    .btn.warn {
-      background: var(--coral);
-    }
-
-    .layout {
+    .grid {
       display: grid;
-      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-      gap: 22px;
-      padding: 24px clamp(18px, 3vw, 38px) 40px;
+      gap: 14px;
     }
 
-    .panel {
-      border: 1px solid rgba(17, 24, 39, 0.1);
-      border-radius: 8px;
-      background: var(--panel);
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(14px);
+      backdrop-filter: blur(22px);
+      overflow: hidden;
     }
 
-    .panel-header {
+    .card.tight { border-radius: 20px; }
+
+    .card-head {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 14px;
       padding: 18px 18px 14px;
-      border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+      border-bottom: 1px solid var(--line);
     }
 
-    .panel-header h2 {
-      margin: 0;
-      font-size: 15px;
-      line-height: 1.2;
+    .card-head h2 {
+      font-size: 17px;
+      line-height: 1.14;
+      letter-spacing: -0.03em;
     }
 
-    .panel-header p,
-    .subtle {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .side {
-      display: grid;
-      gap: 16px;
-      align-content: start;
-    }
-
-    .summary-list,
-    .module-list {
-      display: grid;
-    }
-
-    .summary-row,
-    .module-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
-      align-items: center;
-      padding: 14px 18px;
-      border-top: 1px solid rgba(17, 24, 39, 0.08);
-    }
-
-    .summary-row:first-child,
-    .module-row:first-child {
-      border-top: 0;
-    }
-
-    .summary-row strong,
-    .module-row strong {
-      display: block;
-      font-size: 14px;
-      line-height: 1.25;
-    }
-
-    .summary-row span,
-    .module-row span {
-      display: block;
-      margin-top: 3px;
+    .card-head p,
+    .micro {
+      margin-top: 4px;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.35;
+      letter-spacing: 0;
     }
 
-    .pill {
-      display: inline-flex;
+    .body { padding: 16px 18px 18px; }
+
+    .master {
+      display: grid;
+      grid-template-columns: 1fr auto;
       align-items: center;
-      justify-content: center;
-      min-width: 78px;
-      min-height: 28px;
-      border-radius: 999px;
-      padding: 0 10px;
-      background: #f4f0e6;
-      color: #744f16;
-      font-size: 11px;
-      font-weight: 850;
-      text-transform: uppercase;
-      white-space: nowrap;
+      gap: 14px;
+      padding: 18px;
     }
 
-    .pill.on {
-      background: #e8f7f3;
-      color: var(--teal-dark);
-    }
+    .master h2 { font-size: 22px; line-height: 1.05; letter-spacing: -0.04em; }
+    .master p { margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.38; }
 
     .switch {
       position: relative;
-      width: 50px;
-      height: 28px;
       display: inline-block;
+      width: 64px;
+      height: 38px;
+      flex: 0 0 auto;
     }
 
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
+    .switch input { opacity: 0; width: 0; height: 0; }
 
     .slider {
       position: absolute;
       inset: 0;
       border-radius: 999px;
-      background: #cbd5df;
-      transition: background 180ms ease;
+      background: #c9d3d0;
+      transition: 180ms ease;
     }
 
     .slider::after {
       content: "";
       position: absolute;
-      width: 22px;
-      height: 22px;
-      top: 3px;
-      left: 3px;
-      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      left: 4px;
+      top: 4px;
+      border-radius: 999px;
       background: white;
-      box-shadow: 0 2px 8px rgba(17, 24, 39, 0.28);
-      transition: transform 180ms ease;
+      box-shadow: 0 6px 18px rgba(20, 32, 31, 0.22);
+      transition: 180ms ease;
     }
 
-    .switch input:checked + .slider {
-      background: var(--teal);
-    }
+    .switch input:checked + .slider { background: var(--teal); }
+    .switch input:checked + .slider::after { transform: translateX(26px); }
 
-    .switch input:checked + .slider::after {
-      transform: translateX(22px);
-    }
+    .module-list { display: grid; }
 
-    .main {
+    .module {
       display: grid;
-      gap: 18px;
-      align-content: start;
-    }
-
-    .sandbox {
-      min-height: 460px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .sandbox-stage {
-      min-height: 360px;
-      display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 18px;
-      align-items: stretch;
-      padding: 18px;
-    }
-
-    .ops-board {
-      display: grid;
-      align-content: start;
+      grid-template-columns: auto 1fr auto;
       gap: 12px;
-      padding: 18px;
-      border: 1px solid rgba(17, 24, 39, 0.08);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.68);
+      align-items: center;
+      padding: 16px 18px;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.34);
     }
 
-    .ops-board h3 {
-      margin: 0;
-      font-size: 24px;
-      line-height: 1.05;
-    }
+    .module:first-child { border-top: 0; }
 
-    .ops-metric {
+    .icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 15px;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
+      place-items: center;
+      background: var(--cream);
+      color: var(--teal-strong);
+      font-weight: 950;
+      box-shadow: inset 0 0 0 1px rgba(20, 32, 31, 0.06);
     }
 
-    .metric {
-      padding: 12px;
-      border: 1px solid rgba(17, 24, 39, 0.08);
-      border-radius: 8px;
-      background: white;
-    }
+    .module strong { display: block; font-size: 15px; line-height: 1.2; letter-spacing: -0.02em; }
+    .module span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.32; }
 
-    .metric strong {
-      display: block;
-      font-size: 22px;
-      line-height: 1;
-    }
+    .field-stack { display: grid; gap: 12px; }
 
-    .metric span {
-      display: block;
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.25;
-    }
-
-    .field-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      padding: 18px;
-    }
-
-    label.field {
+    .field {
       display: grid;
       gap: 7px;
       font-size: 12px;
-      font-weight: 800;
-      color: #344054;
+      color: #344541;
+      font-weight: 850;
     }
 
     .field input,
@@ -376,306 +278,490 @@
     textarea {
       width: 100%;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 15px;
       background: rgba(255, 255, 255, 0.9);
-      color: var(--ink);
-      padding: 10px 11px;
+      padding: 12px 13px;
       outline: none;
+      font-weight: 650;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    textarea {
+      min-height: 300px;
+      resize: vertical;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0;
     }
 
     .field input:focus,
     .field select:focus,
     textarea:focus {
-      border-color: rgba(15, 118, 110, 0.55);
-      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.11);
+      border-color: rgba(15, 118, 110, 0.48);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
     }
 
-    .quick-actions {
+    .token-row { display: grid; gap: 10px; }
+
+    .inline {
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       gap: 10px;
-      padding: 0 18px 18px;
+      flex-wrap: wrap;
     }
+
+    .checkline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .checkline input { width: 16px; height: 16px; accent-color: var(--teal); }
+
+    .btn {
+      min-height: 44px;
+      border-radius: 15px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--teal-strong);
+      color: white;
+      font-weight: 900;
+      text-decoration: none;
+      box-shadow: 0 14px 30px rgba(15, 79, 73, 0.22);
+      touch-action: manipulation;
+    }
+
+    .btn.secondary {
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .btn.ghost {
+      color: var(--teal-strong);
+      background: transparent;
+      box-shadow: none;
+      border: 1px solid rgba(15, 118, 110, 0.2);
+    }
+
+    .btn.warn { background: var(--coral); }
+    .btn:disabled { cursor: not-allowed; opacity: 0.55; }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .actions.three { grid-template-columns: 1fr; }
+
+    .pill {
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #f2ead9;
+      color: #7b561c;
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 950;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .pill.on { background: var(--mint); color: var(--teal-strong); }
+    .pill.off { background: #edf0ef; color: #6b756f; }
+
+    .preview {
+      position: relative;
+      min-height: 260px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.78), rgba(255,255,255,0.42)),
+        repeating-linear-gradient(90deg, rgba(20,32,31,0.04) 0, rgba(20,32,31,0.04) 1px, transparent 1px, transparent 44px),
+        #f7f8f4;
+    }
+
+    .fake-app {
+      position: relative;
+      z-index: 1;
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .fake-bar {
+      height: 42px;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--line);
+    }
+
+    .fake-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .fake-tile { height: 92px; border-radius: 18px; background: rgba(255,255,255,0.62); border: 1px solid var(--line); }
 
     details {
-      border-top: 1px solid rgba(17, 24, 39, 0.08);
+      border-top: 1px solid var(--line);
     }
 
     summary {
-      padding: 16px 18px;
+      list-style: none;
       cursor: pointer;
-      font-size: 13px;
-      font-weight: 850;
+      padding: 16px 18px;
+      font-size: 14px;
+      font-weight: 950;
     }
 
-    .advanced {
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "▾"; float: right; color: var(--muted); }
+    details[open] summary::after { content: "▴"; }
+
+    .savebar {
+      position: fixed;
+      z-index: 40;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(246, 243, 236, 0.82);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid var(--line);
+    }
+
+    .savebar-inner {
+      width: min(100%, 1120px);
+      margin: 0 auto;
       display: grid;
-      gap: 12px;
-      padding: 0 18px 18px;
+      grid-template-columns: 0.86fr 1.14fr;
+      gap: 10px;
     }
 
-    textarea {
-      min-height: 320px;
-      resize: vertical;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12px;
-      line-height: 1.45;
+    .desktop-only { display: none; }
+
+    @media (min-width: 740px) {
+      .app { padding-inline: 24px; }
+      .grid.two { grid-template-columns: 0.92fr 1.08fr; align-items: start; }
+      .actions.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .field-stack.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .desktop-only { display: inline-flex; }
+      .preview { min-height: 360px; }
+      .savebar-inner { grid-template-columns: auto 1fr; }
+      .savebar .btn.secondary { width: 180px; }
     }
 
-    @media (max-width: 980px) {
-      .layout,
-      .sandbox-stage {
-        grid-template-columns: 1fr;
-      }
-
-      .side {
-        order: 2;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .top {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .top-actions {
-        width: 100%;
-        justify-content: flex-start;
-      }
-
-      .field-grid,
-      .ops-metric {
-        grid-template-columns: 1fr;
-      }
+    @media (max-width: 420px) {
+      .hero-top { align-items: flex-start; }
+      .status { max-width: 40vw; }
+      .module { grid-template-columns: 1fr auto; }
+      .module .icon { display: none; }
+      .btn { min-height: 46px; padding-inline: 12px; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header class="top">
-      <div class="brand">
-        <span>Command Center</span>
-        <h1>Enterprise Experience Injector</h1>
-      </div>
-      <div class="top-actions">
-        <div class="status" id="saveStatus"><span class="dot"></span><span>Sandbox active</span></div>
-        <button class="btn secondary" id="loadBtn" type="button">Load KV</button>
-        <button class="btn" id="saveBtn" type="button">Save KV</button>
-      </div>
-    </header>
-
-    <main class="layout">
-      <aside class="side">
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>Today</h2>
-              <p>Current operational readout.</p>
-            </div>
-            <span class="pill on" id="globalPill">Enabled</span>
+  <main class="app">
+    <section class="hero">
+      <div class="hero-top">
+        <div class="brand">
+          <div class="mark">EEI</div>
+          <div>
+            <div class="eyebrow">Admin móvil</div>
+            <h1>Control EEI</h1>
           </div>
-          <div class="summary-list" id="summaryList"></div>
+        </div>
+        <div class="status loading" id="saveStatus"><span class="dot"></span><span>Cargando</span></div>
+      </div>
+      <p class="hint">Una pantalla simple para prender, apagar, probar y guardar los efectos visuales. La configuración real se carga automáticamente al abrir.</p>
+    </section>
+
+    <section class="grid two">
+      <div class="grid">
+        <section class="card tight">
+          <div class="card-head">
+            <div>
+              <h2>Acceso admin</h2>
+              <p>Guarda tu llave sólo en este navegador.</p>
+            </div>
+            <span class="pill" id="tokenPill">Sin llave</span>
+          </div>
+          <div class="body token-row">
+            <label class="field">Admin key
+              <input type="password" id="adminToken" autocomplete="off" placeholder="Pega EEI_ADMIN_TOKEN">
+            </label>
+            <div class="inline">
+              <label class="checkline"><input type="checkbox" id="rememberToken"> Recordar en este dispositivo</label>
+            </div>
+            <div class="actions">
+              <button class="btn secondary" type="button" id="saveTokenBtn">Guardar llave</button>
+              <button class="btn ghost" type="button" id="forgetTokenBtn">Olvidar</button>
+            </div>
+          </div>
         </section>
 
-        <section class="panel">
-          <div class="panel-header">
+        <section class="card">
+          <div class="master">
             <div>
-              <h2>Modules</h2>
-              <p>Toggle the active overlay layers.</p>
+              <h2>EEI global</h2>
+              <p>Si está apagado, no se muestra nada aunque la ruta exista.</p>
             </div>
+            <label class="switch"><input type="checkbox" data-bind="enabled"><span class="slider"></span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Módulos</h2>
+              <p>Activa sólo lo necesario.</p>
+            </div>
+            <span class="pill" id="activePill">0 activos</span>
           </div>
           <div class="module-list">
-            <div class="module-row">
-              <div><strong>Maintenance</strong><span>Top bar with countdown.</span></div>
+            <div class="module">
+              <div class="icon">⚙</div>
+              <div><strong>Mantenimiento</strong><span>Barra breve con cuenta regresiva.</span></div>
               <label class="switch"><input type="checkbox" data-bind="maintenance.enabled"><span class="slider"></span></label>
             </div>
-            <div class="module-row">
-              <div><strong>Birthdays</strong><span>Signia data with toast and release.</span></div>
-              <label class="switch"><input type="checkbox" data-bind="birthday.enabled" data-force-birthday="1"><span class="slider"></span></label>
+            <div class="module">
+              <div class="icon">🎂</div>
+              <div><strong>Cumpleaños</strong><span>Sólo si Signia devuelve cumpleañeros reales.</span></div>
+              <label class="switch"><input type="checkbox" data-bind="birthday.enabled"><span class="slider"></span></label>
             </div>
-            <div class="module-row">
-              <div><strong>Christmas</strong><span>Snow field and winter Ambassador.</span></div>
-              <label class="switch"><input type="checkbox" data-bind="festivities.christmas.enabled"><span class="slider"></span></label>
-            </div>
-            <div class="module-row">
-              <div><strong>New Year</strong><span>Fireworks particle system.</span></div>
-              <label class="switch"><input type="checkbox" data-bind="festivities.new_year.enabled"><span class="slider"></span></label>
-            </div>
-            <div class="module-row">
-              <div><strong>Mundial 2026</strong><span>Trionda-style balls and match widget.</span></div>
+            <div class="module">
+              <div class="icon">⚽</div>
+              <div><strong>Mundial pin</strong><span>Mini banderas, ocultable por usuario.</span></div>
               <label class="switch"><input type="checkbox" data-bind="festivities.mundial_2026.enabled"><span class="slider"></span></label>
             </div>
+            <div class="module">
+              <div class="icon">❄</div>
+              <div><strong>Navidad</strong><span>Efecto temporal de temporada.</span></div>
+              <label class="switch"><input type="checkbox" data-bind="festivities.christmas.enabled"><span class="slider"></span></label>
+            </div>
+            <div class="module">
+              <div class="icon">✦</div>
+              <div><strong>Año nuevo</strong><span>Fuegos artificiales.</span></div>
+              <label class="switch"><input type="checkbox" data-bind="festivities.new_year.enabled"><span class="slider"></span></label>
+            </div>
           </div>
         </section>
-      </aside>
+      </div>
 
-      <section class="main">
-        <section class="panel sandbox">
-          <div class="panel-header">
+      <div class="grid">
+        <section class="card preview" id="previewSurface">
+          <div class="fake-app">
+            <div class="card-head" style="padding:0 0 12px;border:0;background:transparent">
+              <div>
+                <div class="eyebrow">Preview</div>
+                <h2>Vista segura</h2>
+                <p class="micro">Esto sólo prueba efectos aquí. No cambia usuarios reales hasta guardar.</p>
+              </div>
+              <span class="pill on" id="previewPill">Listo</span>
+            </div>
+            <div class="fake-bar"></div>
+            <div class="fake-grid">
+              <div class="fake-tile"></div>
+              <div class="fake-tile"></div>
+            </div>
+            <div class="actions three">
+              <button class="btn secondary" type="button" id="previewBirthdayBtn">Probar cumple</button>
+              <button class="btn secondary" type="button" id="previewMundialBtn">Probar mundial</button>
+              <button class="btn ghost" type="button" id="clearPreviewBtn">Limpiar</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
             <div>
-              <h2>Visual Verification Sandbox</h2>
-              <p>Live overlay preview over this admin surface.</p>
-            </div>
-            <span class="pill on" id="previewPill">Rendering</span>
-          </div>
-
-          <div class="sandbox-stage">
-            <div class="ops-board">
-              <span class="pill">Internal SPA</span>
-              <h3>Campus Operations</h3>
-              <p class="subtle">The overlay is injected above this simulated product surface with a pointer-safe WebGL canvas.</p>
-              <div class="ops-metric">
-                <div class="metric"><strong id="activeCount">0</strong><span>active layers</span></div>
-                <div class="metric"><strong id="birthdayCount">0</strong><span>birthdays today</span></div>
-                <div class="metric"><strong id="countdownMetric">--</strong><span>maintenance ETA</span></div>
-              </div>
-            </div>
-
-            <div class="ops-board">
-              <span class="pill">Attention</span>
-              <h3 id="attentionTitle">Experience ready</h3>
-              <p class="subtle" id="attentionCopy">Use the module toggles to validate each effect instantly.</p>
-              <div class="quick-actions" style="padding:0">
-                <button class="btn secondary" type="button" id="birthdayPreviewBtn">Replay Birthday</button>
-                <button class="btn secondary" type="button" id="celebrationPreviewBtn">Celebration QA</button>
-                <button class="btn warn" type="button" id="allOffBtn">All Off</button>
-              </div>
+              <h2>Ajustes rápidos</h2>
+              <p>Campos comunes. Lo avanzado queda oculto.</p>
             </div>
           </div>
+          <div class="body field-stack">
+            <div class="field-stack two">
+              <label class="field">Fecha/hora mantenimiento
+                <input type="text" data-bind="maintenance.targetAt" spellcheck="false" placeholder="2026-07-01T03:00:00-06:00">
+              </label>
+              <label class="field">Equipo prioritario Mundial
+                <input type="text" data-bind="festivities.mundial_2026.priorityTeam" placeholder="Mexico">
+              </label>
+            </div>
+            <label class="field">Mensaje mantenimiento
+              <input type="text" data-bind="maintenance.message" placeholder="Mensaje visible">
+            </label>
+          </div>
+
+          <details>
+            <summary>Datos e integración</summary>
+            <div class="body field-stack">
+              <div class="field-stack two">
+                <label class="field">Modo cumpleaños
+                  <select data-bind="birthday.mode">
+                    <option value="api">api</option>
+                    <option value="mock">mock</option>
+                  </select>
+                </label>
+                <label class="field">Mundial API URL
+                  <input type="text" data-bind="festivities.mundial_2026.sportsApiUrl" spellcheck="false">
+                </label>
+              </div>
+              <p class="micro">Para producción, cumpleaños debe quedar en <strong>api</strong>. El botón de preview usa datos falsos sólo dentro del admin.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>JSON avanzado</summary>
+            <div class="body field-stack">
+              <textarea id="jsonEditor" spellcheck="false"></textarea>
+              <div class="actions">
+                <button class="btn secondary" type="button" id="applyJsonBtn">Aplicar JSON</button>
+                <button class="btn ghost" type="button" id="formatJsonBtn">Formatear</button>
+              </div>
+            </div>
+          </details>
         </section>
+      </div>
+    </section>
+  </main>
 
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>Configuration</h2>
-              <p>Operational controls mapped to the KV JSON.</p>
-            </div>
-          </div>
-          <form id="configForm">
-            <div class="field-grid">
-              <label class="field">Maintenance target
-                <input type="text" data-bind="maintenance.targetAt" spellcheck="false">
-              </label>
-              <label class="field">Maintenance message
-                <input type="text" data-bind="maintenance.message">
-              </label>
-              <label class="field">Birthday mode
-                <select data-bind="birthday.mode">
-                  <option value="api">api</option>
-                  <option value="mock">mock</option>
-                </select>
-              </label>
-              <label class="field">Priority team
-                <input type="text" data-bind="festivities.mundial_2026.priorityTeam">
-              </label>
-              <label class="field">Admin token
-                <input type="password" id="adminToken" autocomplete="off" placeholder="Paste EEI_ADMIN_TOKEN value">
-              </label>
-              <label class="field">Mundial API URL
-                <input type="text" data-bind="festivities.mundial_2026.sportsApiUrl" spellcheck="false">
-              </label>
-            </div>
-
-            <div class="quick-actions">
-              <button class="btn secondary" type="button" id="applyFieldsBtn">Apply Fields</button>
-              <button class="btn secondary" type="button" id="resetBtn">Reset Default</button>
-            </div>
-
-            <details>
-              <summary>Advanced JSON</summary>
-              <div class="advanced">
-                <textarea id="jsonEditor" spellcheck="false"></textarea>
-                <div class="quick-actions" style="padding:0">
-                  <button class="btn secondary" type="button" id="applyJsonBtn">Apply JSON</button>
-                  <button class="btn secondary" type="button" id="formatJsonBtn">Format JSON</button>
-                </div>
-              </div>
-            </details>
-          </form>
-        </section>
-      </section>
-    </main>
-  </div>
+  <nav class="savebar" aria-label="Guardar configuración">
+    <div class="savebar-inner">
+      <button class="btn secondary" type="button" id="loadBtn">Cargar actual</button>
+      <button class="btn" type="button" id="saveBtn" disabled>Guardar cambios</button>
+    </div>
+  </nav>
 
   <script type="module">
-    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v3";
+    import { DEFAULT_CONFIG, startEEI, updateEEI } from "./eei-engine.js?v=2026-07-01-v4";
 
-    const state = clone(DEFAULT_CONFIG);
-    const refs = {
-      status: document.getElementById("saveStatus"),
-      summary: document.getElementById("summaryList"),
-      globalPill: document.getElementById("globalPill"),
-      previewPill: document.getElementById("previewPill"),
-      activeCount: document.getElementById("activeCount"),
-      birthdayCount: document.getElementById("birthdayCount"),
-      countdownMetric: document.getElementById("countdownMetric"),
-      attentionTitle: document.getElementById("attentionTitle"),
-      attentionCopy: document.getElementById("attentionCopy"),
-      jsonEditor: document.getElementById("jsonEditor"),
-      token: document.getElementById("adminToken")
+    const TOKEN_STORAGE_KEY = "eei:adminToken";
+    const REMEMBER_STORAGE_KEY = "eei:rememberToken";
+    const SAMPLE_BIRTHDAY = {
+      id: "preview",
+      name: "Colaborador Preview",
+      puesto: "Equipo EEI",
+      plantel: "Sandbox",
+      cumpleanos: "01-01"
     };
 
-    start();
+    const state = clone(DEFAULT_CONFIG);
+    let loadedOnce = false;
+    let dirty = false;
 
-    async function start() {
+    const refs = {
+      status: document.getElementById("saveStatus"),
+      token: document.getElementById("adminToken"),
+      tokenPill: document.getElementById("tokenPill"),
+      rememberToken: document.getElementById("rememberToken"),
+      saveTokenBtn: document.getElementById("saveTokenBtn"),
+      forgetTokenBtn: document.getElementById("forgetTokenBtn"),
+      loadBtn: document.getElementById("loadBtn"),
+      saveBtn: document.getElementById("saveBtn"),
+      activePill: document.getElementById("activePill"),
+      previewPill: document.getElementById("previewPill"),
+      jsonEditor: document.getElementById("jsonEditor"),
+      previewBirthdayBtn: document.getElementById("previewBirthdayBtn"),
+      previewMundialBtn: document.getElementById("previewMundialBtn"),
+      clearPreviewBtn: document.getElementById("clearPreviewBtn"),
+      applyJsonBtn: document.getElementById("applyJsonBtn"),
+      formatJsonBtn: document.getElementById("formatJsonBtn")
+    };
+
+    boot();
+
+    async function boot() {
       bindControls();
+      hydrateToken();
       render();
+      await loadCurrentConfig({ initial: true });
       await startEEI(state, { sandbox: true });
-      setStatus("Sandbox active", "ok");
+      render();
     }
 
     function bindControls() {
       document.querySelectorAll("[data-bind]").forEach((control) => {
         control.addEventListener("input", () => {
           writeControl(control);
-          const forceBirthday = control.dataset.forceBirthday === "1" && control.checked;
+          markDirty();
           render();
-          updateEEI(state, { sandbox: true, forceBirthday });
+          updateEEI(state, { sandbox: true });
         });
       });
 
-      document.getElementById("loadBtn").addEventListener("click", loadKv);
-      document.getElementById("saveBtn").addEventListener("click", saveKv);
-      document.getElementById("configForm").addEventListener("submit", (event) => event.preventDefault());
-      document.getElementById("applyFieldsBtn").addEventListener("click", () => {
-        readControls();
-        render();
-        updateEEI(state, { sandbox: true });
+      refs.token.addEventListener("input", () => {
+        updateTokenUi();
+        markDirty(false);
       });
-      document.getElementById("resetBtn").addEventListener("click", () => {
-        replaceState(DEFAULT_CONFIG);
-        render();
-        updateEEI(state, { sandbox: true });
-        setStatus("Defaults restored", "ok");
+      refs.rememberToken.addEventListener("change", () => {
+        localStorage.setItem(REMEMBER_STORAGE_KEY, refs.rememberToken.checked ? "1" : "0");
+        if (refs.rememberToken.checked && refs.token.value.trim()) {
+          saveTokenLocal();
+        }
+        updateTokenUi();
       });
-      document.getElementById("applyJsonBtn").addEventListener("click", applyJson);
-      document.getElementById("formatJsonBtn").addEventListener("click", () => {
+      refs.saveTokenBtn.addEventListener("click", saveTokenLocal);
+      refs.forgetTokenBtn.addEventListener("click", forgetTokenLocal);
+      refs.loadBtn.addEventListener("click", () => loadCurrentConfig({ manual: true }));
+      refs.saveBtn.addEventListener("click", saveConfig);
+      refs.previewBirthdayBtn.addEventListener("click", previewBirthday);
+      refs.previewMundialBtn.addEventListener("click", previewMundial);
+      refs.clearPreviewBtn.addEventListener("click", clearPreview);
+      refs.applyJsonBtn.addEventListener("click", applyJson);
+      refs.formatJsonBtn.addEventListener("click", () => {
         refs.jsonEditor.value = JSON.stringify(state, null, 2);
-      });
-      document.getElementById("birthdayPreviewBtn").addEventListener("click", () => {
-        state.birthday.enabled = true;
-        render();
-        updateEEI(state, { sandbox: true });
-      });
-      document.getElementById("celebrationPreviewBtn").addEventListener("click", () => {
-        state.festivities.new_year.enabled = true;
-        state.festivities.mundial_2026.enabled = true;
-        render();
-        updateEEI(state, { sandbox: true });
-      });
-      document.getElementById("allOffBtn").addEventListener("click", () => {
-        state.maintenance.enabled = false;
-        state.birthday.enabled = false;
-        state.festivities.christmas.enabled = false;
-        state.festivities.new_year.enabled = false;
-        state.festivities.mundial_2026.enabled = false;
-        render();
-        updateEEI(state, { sandbox: true });
       });
     }
 
-    async function loadKv() {
+    function hydrateToken() {
+      const remembered = localStorage.getItem(REMEMBER_STORAGE_KEY) === "1";
+      const saved = localStorage.getItem(TOKEN_STORAGE_KEY) || "";
+      refs.rememberToken.checked = remembered || Boolean(saved);
+      if (saved) {
+        refs.token.value = saved;
+      }
+      updateTokenUi();
+    }
+
+    function saveTokenLocal() {
+      const token = refs.token.value.trim();
+      if (!token) {
+        setStatus("Pega la llave primero", "warn");
+        return;
+      }
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      localStorage.setItem(REMEMBER_STORAGE_KEY, "1");
+      refs.rememberToken.checked = true;
+      updateTokenUi();
+      setStatus("Llave guardada en este dispositivo", "ok");
+    }
+
+    function forgetTokenLocal() {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(REMEMBER_STORAGE_KEY);
+      refs.token.value = "";
+      refs.rememberToken.checked = false;
+      updateTokenUi();
+      setStatus("Llave olvidada", "ok");
+    }
+
+    function updateTokenUi() {
+      const hasTyped = Boolean(refs.token.value.trim());
+      const hasSaved = Boolean(localStorage.getItem(TOKEN_STORAGE_KEY));
+      refs.tokenPill.textContent = hasSaved ? "Guardada" : hasTyped ? "Lista" : "Sin llave";
+      refs.tokenPill.className = `pill ${hasSaved || hasTyped ? "on" : ""}`;
+    }
+
+    async function loadCurrentConfig({ initial = false, manual = false } = {}) {
+      setStatus(initial ? "Cargando config" : "Cargando actual", "loading");
       try {
         const response = await fetch("/__eei/config", { cache: "no-store" });
         if (!response.ok) {
@@ -683,26 +769,39 @@
         }
         const payload = await response.json();
         replaceState(payload);
+        loadedOnce = true;
+        dirty = false;
         render();
-        await updateEEI(state, { sandbox: true });
-        setStatus("KV loaded", "ok");
+        await updateEEI(state, { sandbox: true, replace: true });
+        setStatus(manual ? "Config actual cargada" : "Config cargada", "ok");
       } catch (error) {
-        setStatus(`Load failed: ${error.message}`, "warn");
+        loadedOnce = false;
+        render();
+        setStatus(`No se pudo cargar: ${error.message}`, "warn");
       }
     }
 
-    async function saveKv() {
+    async function saveConfig() {
       readControls();
-      const headers = { "Content-Type": "application/json" };
       const token = refs.token.value.trim();
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
+      if (!token) {
+        setStatus("Falta Admin key", "warn");
+        return;
+      }
+      if (refs.rememberToken.checked) {
+        localStorage.setItem(TOKEN_STORAGE_KEY, token);
+        localStorage.setItem(REMEMBER_STORAGE_KEY, "1");
       }
 
+      setStatus("Guardando", "loading");
+      refs.saveBtn.disabled = true;
       try {
         const response = await fetch("/__eei/config", {
           method: "PUT",
-          headers,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
           body: JSON.stringify(state)
         });
         if (!response.ok) {
@@ -710,22 +809,65 @@
           throw new Error(payload.error || `HTTP ${response.status}`);
         }
         replaceState(await response.json());
+        dirty = false;
         render();
-        setStatus("KV saved", "ok");
+        await updateEEI(state, { sandbox: true, replace: true });
+        setStatus("Guardado", "ok");
       } catch (error) {
-        setStatus(`Save failed: ${error.message}`, "warn");
+        refs.saveBtn.disabled = false;
+        setStatus(`Falló: ${error.message}`, "warn");
       }
+    }
+
+    async function previewBirthday() {
+      const preview = deepMerge(state, {
+        enabled: true,
+        birthday: {
+          enabled: true,
+          mode: "mock",
+          showOncePerDay: false,
+          mockBirthdays: [SAMPLE_BIRTHDAY]
+        }
+      });
+      refs.previewPill.textContent = "Cumple preview";
+      refs.previewPill.className = "pill on";
+      await updateEEI(preview, { sandbox: true, forceBirthday: true, replace: true });
+      setStatus("Preview de cumple", "ok");
+    }
+
+    async function previewMundial() {
+      const preview = deepMerge(state, {
+        enabled: true,
+        festivities: {
+          mundial_2026: {
+            enabled: true,
+            ballCount: Math.max(3, Number(state.festivities?.mundial_2026?.ballCount || 4))
+          }
+        }
+      });
+      refs.previewPill.textContent = "Mundial preview";
+      refs.previewPill.className = "pill on";
+      await updateEEI(preview, { sandbox: true, replace: true });
+      setStatus("Preview mundial", "ok");
+    }
+
+    async function clearPreview() {
+      refs.previewPill.textContent = "Listo";
+      refs.previewPill.className = "pill on";
+      await updateEEI(state, { sandbox: true, replace: true });
+      setStatus("Preview limpio", "ok");
     }
 
     function applyJson() {
       try {
         const payload = JSON.parse(refs.jsonEditor.value);
         replaceState(payload);
+        markDirty();
         render();
-        updateEEI(state, { sandbox: true });
-        setStatus("JSON applied", "ok");
+        updateEEI(state, { sandbox: true, replace: true });
+        setStatus("JSON aplicado", "ok");
       } catch (error) {
-        setStatus(`Invalid JSON: ${error.message}`, "warn");
+        setStatus(`JSON inválido: ${error.message}`, "warn");
       }
     }
 
@@ -733,45 +875,23 @@
       syncControls();
       refs.jsonEditor.value = JSON.stringify(state, null, 2);
 
-      const modules = [
-        ["Maintenance", state.maintenance.enabled],
-        ["Birthdays", state.birthday.enabled],
-        ["Christmas", state.festivities.christmas.enabled],
-        ["New Year", state.festivities.new_year.enabled],
-        ["Mundial 2026", state.festivities.mundial_2026.enabled]
-      ];
-      const active = modules.filter(([, enabled]) => enabled).length;
-      refs.activeCount.textContent = String(active);
-      refs.birthdayCount.textContent = String(state.birthday.mockBirthdays?.length || 0);
-      refs.countdownMetric.textContent = compactCountdown(state.maintenance.targetAt);
-      refs.globalPill.textContent = state.enabled ? "Enabled" : "Disabled";
-      refs.globalPill.className = `pill ${state.enabled ? "on" : ""}`;
-      refs.previewPill.textContent = active ? "Rendering" : "Idle";
-      refs.previewPill.className = `pill ${active ? "on" : ""}`;
-
-      const urgent = state.maintenance.enabled ? "Maintenance window visible" :
-        state.birthday.enabled ? "Birthday layer visible" :
-        state.festivities.mundial_2026.enabled ? "Mundial layer visible" :
-        state.festivities.new_year.enabled ? "Fireworks layer visible" :
-        state.festivities.christmas.enabled ? "Snow layer visible" : "Experience ready";
-      refs.attentionTitle.textContent = urgent;
-      refs.attentionCopy.textContent = active ? "The injected overlay is running over the admin UI." : "All visual modules are off.";
-
-      refs.summary.innerHTML = [
-        summaryRow("System state", state.enabled ? "Worker injection enabled" : "Worker injection disabled", state.enabled),
-        summaryRow("Maintenance", state.maintenance.enabled ? compactCountdown(state.maintenance.targetAt) : "Off", state.maintenance.enabled),
-        summaryRow("Birthdays", state.birthday.enabled ? `${state.birthday.mockBirthdays?.length || 0} sample record` : "Off", state.birthday.enabled),
-        summaryRow("Mundial", state.festivities.mundial_2026.enabled ? state.festivities.mundial_2026.priorityTeam : "Off", state.festivities.mundial_2026.enabled)
-      ].join("");
+      const activeModules = [
+        state.maintenance?.enabled,
+        state.birthday?.enabled,
+        state.festivities?.mundial_2026?.enabled,
+        state.festivities?.christmas?.enabled,
+        state.festivities?.new_year?.enabled
+      ].filter(Boolean).length;
+      refs.activePill.textContent = `${activeModules} activo${activeModules === 1 ? "" : "s"}`;
+      refs.activePill.className = `pill ${activeModules ? "on" : "off"}`;
+      refs.saveBtn.disabled = !loadedOnce || !dirty;
     }
 
-    function summaryRow(label, value, on) {
-      return `
-        <div class="summary-row">
-          <div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>
-          <span class="pill ${on ? "on" : ""}">${on ? "On" : "Off"}</span>
-        </div>
-      `;
+    function markDirty(value = true) {
+      if (value) {
+        dirty = true;
+      }
+      refs.saveBtn.disabled = !loadedOnce || !dirty;
     }
 
     function syncControls() {
@@ -836,29 +956,9 @@
       return output;
     }
 
-    function compactCountdown(targetAt) {
-      const target = Date.parse(targetAt || "");
-      if (!Number.isFinite(target)) {
-        return "--";
-      }
-      const ms = target - Date.now();
-      if (ms <= 0) {
-        return "Now";
-      }
-      const totalMinutes = Math.ceil(ms / 60000);
-      const days = Math.floor(totalMinutes / 1440);
-      const hours = Math.floor((totalMinutes % 1440) / 60);
-      const minutes = totalMinutes % 60;
-      if (days > 0) return `${days}d ${hours}h`;
-      if (hours > 0) return `${hours}h ${minutes}m`;
-      return `${minutes}m`;
-    }
-
-    function setStatus(message, tone) {
+    function setStatus(message, tone = "ok") {
+      refs.status.className = `status ${tone === "warn" ? "warn" : tone === "loading" ? "loading" : ""}`;
       refs.status.innerHTML = `<span class="dot"></span><span>${escapeHtml(message)}</span>`;
-      refs.status.style.borderColor = tone === "warn" ? "rgba(239, 107, 91, 0.35)" : "rgba(15, 118, 110, 0.22)";
-      refs.status.style.background = tone === "warn" ? "#fff1ee" : "#eef8f5";
-      refs.status.style.color = tone === "warn" ? "#9f3528" : "#103f3b";
     }
 
     function clone(value) {

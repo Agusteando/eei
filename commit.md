@@ -1,22 +1,22 @@
-# EEI Mundial UX / Physics v3
+# EEI Admin Mobile Minimal v4
 
 Changes:
-- Bumped EEI runtime/config version to `3` and asset cache-buster to `2026-07-01-v3`.
-- Replaced the Mundial card with a tiny non-invasive flag-only pin.
-- Added a close button; hiding the pin persists for the current day through `localStorage`.
-- Mundial pin renders nothing when there are no matches.
-- Added real ball behavior: gravity, drag, wall bounces, ball-to-ball collision response, spin damping, finite lifetime, and auto-exit cleanup.
-- Added easter egg: click/tap a ball to kick it strongly out of the screen. It is removed and does not respawn.
-- Updated Worker config normalization so older KV config is migrated to the v3 Mundial defaults.
-- Added `homeTla`/`awayTla` fields from the Football-Data payload so flags are more reliable.
+- Rebuilt `eei-admin.html` as a mobile-first minimal control panel.
+- Admin now auto-loads `/__eei/config` on page open, so reload shows the last saved KV config instead of defaults.
+- Added local device storage for the Admin key using `localStorage`, with explicit "Guardar llave" and "Olvidar" controls.
+- Renamed confusing labels: `Save KV` -> `Guardar cambios`, `Load KV` -> `Cargar actual`, `Admin token` -> `Admin key`.
+- Simplified controls into: Admin access, EEI global, modules, safe preview, quick settings, hidden JSON avanzado.
+- Preview birthday now uses a temporary mock record only inside admin preview and does not modify production config.
+- Bumped cache-buster to `2026-07-01-v4`, config version to `4`, and engine version to `0.4.0`.
 
 Validation:
-- `node --check public/eei-engine.js`
 - `node --check src/worker.js`
+- `node --check public/eei-engine.js`
+- Extracted admin module script and validated syntax with `node --check`.
 
 Deployment check:
 1. Push all files to `Agusteando/eei`.
 2. Confirm Cloudflare deploys the active Worker.
-3. Open `/eei-admin.html?v=2026-07-01-v3`.
-4. Confirm routed pages request `/__eei/engine.js?v=2026-07-01-v3`.
-5. Open `/__eei/config`; it should report `version: 3` after normalization.
+3. Open `/eei-admin.html?v=2026-07-01-v4`.
+4. The admin should immediately show "Config cargada" and display current saved KV settings.
+5. Routed pages should request `/__eei/engine.js?v=2026-07-01-v4&autostart=1&config=...`.

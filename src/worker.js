@@ -1,12 +1,12 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v3";
+const EEI_ASSET_VERSION = "2026-07-01-v4";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const FOOTBALL_DATA_DEFAULT_BASE_URL = "https://api.football-data.org/v4";
 const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 3,
+  version: 4,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -468,7 +468,7 @@ function deepMerge(base, override) {
 function normalizeRuntimeConfig(config) {
   const output = structuredClone(config);
   const storedVersion = Number(output.version || 0);
-  output.version = Math.max(3, storedVersion || 0);
+  output.version = Math.max(4, storedVersion || 0);
 
   if (output?.festivities?.mundial_2026) {
     const current = String(output.festivities.mundial_2026.sportsApiUrl || "");
