@@ -1,1 +1,1 @@
-Refina Command Center y mejora selección no intrusiva de planteles de cumpleaños
+Aclarar selección de notificaciones de cumpleaños por plantel

@@ -1,11 +1,11 @@
 import * as THREE from "./vendor/three.module.js";
 
-const EEI_VERSION = "0.16.0";
+const EEI_VERSION = "0.18.0";
 const MAX_Z_INDEX = "2147483647";
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
 export const DEFAULT_CONFIG = {
-  version: 16,
+  version: 18,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -906,8 +906,16 @@ class BirthdayModule {
     card.className = "eei-birthday-plantel-card";
     card.dataset.eeiWidget = "birthday-planteles";
     card.innerHTML = `
-      <button class="eei-birthday-plantel-open" type="button" aria-label="Cumpleaños por plantel">
-        <span class="eei-birthday-plantel-glyph" aria-hidden="true">🎂</span>
+      <button class="eei-birthday-plantel-open" type="button" aria-label="Notificaciones de cumpleaños">
+        <span class="eei-birthday-plantel-glyph" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="8" width="18" height="4" rx="1"></rect>
+            <path d="M12 8v13"></path>
+            <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path>
+            <path d="M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8"></path>
+            <path d="M16.5 8A2.5 2.5 0 1 0 12 6.5V8"></path>
+          </svg>
+        </span>
         <span class="eei-birthday-plantel-label">Planteles</span>
       </button>
       <button class="eei-birthday-plantel-dismiss" type="button" aria-label="Cerrar">×</button>
@@ -938,9 +946,10 @@ class BirthdayModule {
     modal.className = "eei-birthday-plantel-modal";
     modal.dataset.eeiModal = "birthday-planteles";
     modal.innerHTML = `
-      <div class="eei-birthday-plantel-dialog" role="dialog" aria-modal="true" aria-label="Cumpleaños por plantel">
+      <div class="eei-birthday-plantel-dialog" role="dialog" aria-modal="true" aria-label="Notificaciones de cumpleaños">
         <button class="eei-modal-close" type="button" aria-label="Cerrar">×</button>
-        <h2>Cumples por plantel</h2>
+        <h2>Notificaciones de cumpleaños</h2>
+        <p>Selecciona de qué planteles deseas recibir notificaciones de cumpleaños.</p>
         <input class="eei-birthday-plantel-search" type="search" placeholder="Buscar plantel" autocomplete="off">
         <div class="eei-birthday-plantel-list">
           ${planteles.map((plantel) => `
@@ -2696,7 +2705,11 @@ function overlayCss() {
       display: grid;
       place-items: center;
       background: linear-gradient(135deg, rgba(9, 117, 109, 0.14), rgba(9, 117, 109, 0.08));
-      font-size: 15px;
+      color: #05756e;
+    }
+
+    .eei-birthday-plantel-glyph svg {
+      display: block;
     }
 
     .eei-birthday-plantel-label {
@@ -2734,10 +2747,19 @@ function overlayCss() {
     }
 
     .eei-birthday-plantel-dialog h2 {
-      margin: 2px 40px 12px 0;
+      margin: 2px 40px 6px 0;
       font-size: 22px;
       letter-spacing: -0.04em;
       color: #0f1b19;
+    }
+
+    .eei-birthday-plantel-dialog p {
+      margin: 0 40px 14px 0;
+      color: rgba(15, 27, 25, 0.66);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+      letter-spacing: -0.01em;
     }
 
     .eei-birthday-plantel-search {

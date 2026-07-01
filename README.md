@@ -1,12 +1,9 @@
-# EEI Command Center v16
+# EEI Control v18
 
-- Reworked admin UI with reference-inspired visual direction while keeping only existing EEI logic.
-- No stubs, no Cloudflare usage placeholder, no raw timestamp in main flow.
-- Added Planteles panel backed by `/__eei/signia-planteles`.
-- Maintenance activate/deactivate now autosaves when Admin Key is available.
-- Birthday plantel selector now uses all Signia planteles and is a discreet chip with a close button.
-- Dismissed birthday plantel chip stays hidden for 7 days.
+Ajusta el texto del selector de planteles para cumpleaños.
 
-Open after deploy:
+## Cambios
 
-`/eei-admin.html?v=2026-07-01-v16`
+- Cambia el título del modal de "Cumples por plantel" a "Notificaciones de cumpleaños".
+- Agrega texto mínimo: "Selecciona de qué planteles deseas recibir notificaciones de cumpleaños."
+- Actualiza cache/versiones a v18.
