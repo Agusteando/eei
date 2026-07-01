@@ -1,11 +1,11 @@
 import * as THREE from "./vendor/three.module.js";
 
-const EEI_VERSION = "0.2.0";
+const EEI_VERSION = "0.3.0";
 const MAX_Z_INDEX = "2147483647";
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
 export const DEFAULT_CONFIG = {
-  version: 2,
+  version: 3,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -40,9 +40,15 @@ export const DEFAULT_CONFIG = {
     },
     mundial_2026: {
       enabled: false,
-      intensity: 0.72,
+      intensity: 0.42,
       sportsApiUrl: "/__eei/worldcup-matches",
-      priorityTeam: "Mexico"
+      priorityTeam: "Mexico",
+      compactPin: true,
+      hidePinPerDay: true,
+      ballCount: 4,
+      ballLifetimeMs: 18000,
+      ballAutoExitAfterMs: 10500,
+      ballInteraction: true
     }
   },
   assets: {
@@ -499,12 +505,13 @@ class EEIOverlay {
   }
 
   setWorldCupWidget(config, matches) {
-    let widget = this.uiLayer.querySelector("[data-eei-widget='worldcup']");
-    if (!widget) {
-      widget = document.createElement("aside");
-      widget.className = "eei-worldcup";
-      widget.dataset.eeiWidget = "worldcup";
-      this.uiLayer.appendChild(widget);
+    const today = todayInTimeZone(DEFAULT_TIMEZONE);
+    const storageKey = config.hidePinPerDay === false ? "eei-worldcup-hidden" : `eei-worldcup-hidden:${today}`;
+    const existing = this.uiLayer.querySelector("[data-eei-widget='worldcup']");
+
+    if (safeLocalStorageGet(storageKey) === "1") {
+      existing?.remove();
+      return;
     }
 
     const priorityTeam = (config.priorityTeam || "Mexico").toLowerCase();
@@ -514,19 +521,38 @@ class EEIOverlay {
       return aPriority - bPriority || String(a.time || "").localeCompare(String(b.time || ""));
     }).slice(0, 3);
 
-    const rows = sorted.map((match) => `
-      <li>
-        <span class="eei-match-time">${escapeHtml(match.time || "TBD")}</span>
-        <strong>${escapeHtml(match.home || "Home")} vs ${escapeHtml(match.away || "Away")}</strong>
-        <span>${escapeHtml(match.venue || match.city || "World Cup 2026")}</span>
-      </li>
-    `).join("");
+    if (!sorted.length) {
+      existing?.remove();
+      return;
+    }
+
+    let widget = existing;
+    if (!widget) {
+      widget = document.createElement("aside");
+      widget.className = "eei-worldcup eei-worldcup-pin";
+      widget.dataset.eeiWidget = "worldcup";
+      this.uiLayer.appendChild(widget);
+    }
+
+    const chips = sorted.map((match) => {
+      const homeFlag = teamFlag(match.homeTla || match.home || "");
+      const awayFlag = teamFlag(match.awayTla || match.away || "");
+      const label = `${match.home || "Home"} vs ${match.away || "Away"}${match.time ? `, ${match.time}` : ""}`;
+      return `<span class="eei-worldcup-chip" title="${escapeAttribute(label)}" aria-label="${escapeAttribute(label)}"><span>${homeFlag}</span><span>${awayFlag}</span></span>`;
+    }).join("");
 
     widget.innerHTML = `
-      <p class="eei-eyebrow">Mundial 2026</p>
-      <h2>Partidos de hoy</h2>
-      <ul>${rows || "<li><strong>Sin partidos publicados</strong><span>Esperando calendario</span></li>"}</ul>
+      <div class="eei-worldcup-flags" aria-label="Partidos del Mundial de hoy">${chips}</div>
+      <button class="eei-worldcup-hide" type="button" aria-label="Ocultar Mundial">×</button>
     `;
+
+    const button = widget.querySelector(".eei-worldcup-hide");
+    button?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      safeLocalStorageSet(storageKey, "1");
+      widget.remove();
+    }, { once: true });
   }
 
   clearWorldCupWidget() {
@@ -1206,6 +1232,9 @@ class MundialModule {
     this.geometry = null;
     this.material = null;
     this.config = {};
+    this.raycaster = new THREE.Raycaster();
+    this.pointer = new THREE.Vector2();
+    this.handlePointerDown = this.handlePointerDown.bind(this);
   }
 
   setEnabled(enabled, config = {}) {
@@ -1231,28 +1260,59 @@ class MundialModule {
     this.geometry = new THREE.SphereGeometry(1, 48, 24);
     this.material = new THREE.MeshStandardMaterial({
       map: texture,
-      roughness: 0.42,
-      metalness: 0.03
+      roughness: 0.5,
+      metalness: 0.02
     });
 
-    const count = Math.round(3 + 4 * Number(this.config.intensity || 0.72));
+    const configuredCount = Number(this.config.ballCount);
+    const count = Number.isFinite(configuredCount)
+      ? Math.max(0, Math.min(8, Math.round(configuredCount)))
+      : Math.max(1, Math.round(2 + 5 * Number(this.config.intensity || 0.42)));
+
     for (let index = 0; index < count; index += 1) {
-      const radius = randomBetween(34, 54);
-      const mesh = new THREE.Mesh(this.geometry, this.material);
-      mesh.scale.setScalar(radius);
-      mesh.position.set(
-        randomBetween(-this.engine.size.width / 2 + radius, this.engine.size.width / 2 - radius),
-        randomBetween(-this.engine.size.height / 2 + radius, this.engine.size.height / 3),
-        randomBetween(-60, 240)
-      );
-      mesh.userData.radius = radius;
-      mesh.userData.velocity = new THREE.Vector2(randomBetween(-130, 130), randomBetween(170, 360));
-      mesh.userData.spin = new THREE.Vector3(randomBetween(-2, 2), randomBetween(-3, 3), randomBetween(-1, 1));
-      this.balls.push(mesh);
-      this.group.add(mesh);
+      this.spawnBall(index);
+    }
+
+    if (this.config.ballInteraction !== false) {
+      document.addEventListener("pointerdown", this.handlePointerDown, {
+        capture: true,
+        passive: false
+      });
     }
 
     this.loadMatches();
+  }
+
+  spawnBall(index) {
+    if (!this.group || !this.geometry || !this.material) {
+      return;
+    }
+
+    const width = this.engine.size.width;
+    const height = this.engine.size.height;
+    const radius = randomBetween(22, 36);
+    const mesh = new THREE.Mesh(this.geometry, this.material);
+    mesh.scale.setScalar(radius);
+    mesh.position.set(
+      randomBetween(-width / 2 + radius, width / 2 - radius),
+      height / 2 + radius + index * randomBetween(10, 34),
+      randomBetween(-60, 220)
+    );
+
+    const mass = radius * radius;
+    const lifetimeMs = Math.max(6000, Number(this.config.ballLifetimeMs || 18000));
+    const autoExitMs = Math.max(2500, Number(this.config.ballAutoExitAfterMs || 10500));
+    const bornAt = performance.now();
+    mesh.userData.radius = radius;
+    mesh.userData.mass = mass;
+    mesh.userData.createdAt = bornAt;
+    mesh.userData.autoExitAt = bornAt + autoExitMs + index * randomBetween(700, 1600);
+    mesh.userData.removeAt = bornAt + lifetimeMs + index * randomBetween(300, 900);
+    mesh.userData.exiting = false;
+    mesh.userData.velocity = new THREE.Vector2(randomBetween(-110, 110), randomBetween(-80, 40));
+    mesh.userData.angularVelocity = new THREE.Vector3(randomBetween(-2, 2), randomBetween(-3, 3), randomBetween(-2, 2));
+    this.balls.push(mesh);
+    this.group.add(mesh);
   }
 
   async loadMatches() {
@@ -1278,45 +1338,176 @@ class MundialModule {
     }
   }
 
+  handlePointerDown(event) {
+    if (!this.active || !this.balls.length || !this.engine.camera) {
+      return;
+    }
+
+    const width = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
+    const height = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+    this.pointer.set((event.clientX / width) * 2 - 1, -(event.clientY / height) * 2 + 1);
+    this.raycaster.setFromCamera(this.pointer, this.engine.camera);
+    const intersects = this.raycaster.intersectObjects(this.balls.filter((ball) => !ball.userData.removed), false);
+    if (!intersects.length) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation?.();
+    event.stopPropagation();
+
+    const ball = intersects[0].object;
+    const hit = intersects[0].point;
+    const horizontal = ball.position.x >= 0 ? 1 : -1;
+    const vertical = hit.y <= ball.position.y ? 1 : randomBetween(0.2, 1);
+    this.kickBall(ball, new THREE.Vector2(horizontal, vertical).normalize(), 1900);
+  }
+
+  kickBall(ball, direction = null, strength = 1500) {
+    if (!ball || ball.userData.removed) {
+      return;
+    }
+
+    const dir = direction || new THREE.Vector2(randomBetween(-1, 1), randomBetween(0.45, 1)).normalize();
+    const velocity = ball.userData.velocity;
+    velocity.x = dir.x * strength + randomBetween(-180, 180);
+    velocity.y = Math.abs(dir.y * strength) + randomBetween(220, 520);
+    ball.userData.exiting = true;
+    ball.userData.removeAt = performance.now() + 3800;
+    ball.userData.angularVelocity.multiplyScalar(3.5);
+  }
+
   update(dt) {
     if (!this.active) {
       return;
     }
 
-    const gravity = -620;
+    const now = performance.now();
+    const gravity = -980;
     const width = this.engine.size.width;
     const height = this.engine.size.height;
+    const restitution = 0.82;
+    const floorFriction = 0.84;
+    const airDrag = Math.pow(0.992, dt * 60);
 
-    for (const ball of this.balls) {
+    for (const ball of [...this.balls]) {
+      if (ball.userData.removed) {
+        continue;
+      }
+
+      if (!ball.userData.exiting && now >= ball.userData.autoExitAt) {
+        const direction = new THREE.Vector2(ball.position.x >= 0 ? 1 : -1, randomBetween(0.25, 0.95)).normalize();
+        this.kickBall(ball, direction, randomBetween(1250, 1650));
+      }
+
       const velocity = ball.userData.velocity;
       const radius = ball.userData.radius;
       velocity.y += gravity * dt;
+      velocity.multiplyScalar(airDrag);
       ball.position.x += velocity.x * dt;
       ball.position.y += velocity.y * dt;
 
       const left = -width / 2 + radius;
       const right = width / 2 - radius;
-      const bottom = -height / 2 + radius + 10;
+      const bottom = -height / 2 + radius + 8;
       const top = height / 2 - radius;
 
-      if (ball.position.x < left || ball.position.x > right) {
-        ball.position.x = clamp(ball.position.x, left, right);
-        velocity.x *= -0.86;
+      if (!ball.userData.exiting) {
+        if (ball.position.x < left) {
+          ball.position.x = left;
+          velocity.x = Math.abs(velocity.x) * restitution;
+        } else if (ball.position.x > right) {
+          ball.position.x = right;
+          velocity.x = -Math.abs(velocity.x) * restitution;
+        }
+
+        if (ball.position.y < bottom) {
+          ball.position.y = bottom;
+          velocity.y = Math.abs(velocity.y) * randomBetween(0.66, 0.82);
+          velocity.x *= floorFriction;
+          if (Math.abs(velocity.y) < 90) {
+            velocity.y += randomBetween(90, 180);
+          }
+        } else if (ball.position.y > top) {
+          ball.position.y = top;
+          velocity.y = -Math.abs(velocity.y) * 0.35;
+        }
       }
 
-      if (ball.position.y < bottom) {
-        ball.position.y = bottom;
-        velocity.y = Math.abs(velocity.y) * randomBetween(0.72, 0.88);
-        velocity.x += randomBetween(-42, 42);
-      } else if (ball.position.y > top) {
-        ball.position.y = top;
-        velocity.y *= -0.42;
-      }
+      const angularVelocity = ball.userData.angularVelocity;
+      ball.rotation.x += angularVelocity.x * dt + velocity.y * dt * 0.004;
+      ball.rotation.y += angularVelocity.y * dt + velocity.x * dt * 0.004;
+      ball.rotation.z += angularVelocity.z * dt;
+      angularVelocity.multiplyScalar(Math.pow(0.992, dt * 60));
 
-      ball.rotation.x += ball.userData.spin.x * dt + velocity.y * dt * 0.005;
-      ball.rotation.y += ball.userData.spin.y * dt + velocity.x * dt * 0.005;
-      ball.rotation.z += ball.userData.spin.z * dt;
+      const outsideMargin = Math.max(180, radius * 6);
+      const outside = ball.position.x < -width / 2 - outsideMargin || ball.position.x > width / 2 + outsideMargin || ball.position.y < -height / 2 - outsideMargin || ball.position.y > height / 2 + outsideMargin;
+      if (outside || now >= ball.userData.removeAt) {
+        this.removeBall(ball);
+      }
     }
+
+    this.resolveBallCollisions();
+  }
+
+  resolveBallCollisions() {
+    const balls = this.balls.filter((ball) => !ball.userData.removed && !ball.userData.exiting);
+    for (let i = 0; i < balls.length; i += 1) {
+      for (let j = i + 1; j < balls.length; j += 1) {
+        const a = balls[i];
+        const b = balls[j];
+        const dx = b.position.x - a.position.x;
+        const dy = b.position.y - a.position.y;
+        const minDistance = a.userData.radius + b.userData.radius;
+        const distanceSq = dx * dx + dy * dy;
+        if (distanceSq <= 0.0001 || distanceSq >= minDistance * minDistance) {
+          continue;
+        }
+
+        const distance = Math.sqrt(distanceSq);
+        const nx = dx / distance;
+        const ny = dy / distance;
+        const overlap = minDistance - distance;
+        const aMass = a.userData.mass || 1;
+        const bMass = b.userData.mass || 1;
+        const totalMass = aMass + bMass;
+        a.position.x -= nx * overlap * (bMass / totalMass);
+        a.position.y -= ny * overlap * (bMass / totalMass);
+        b.position.x += nx * overlap * (aMass / totalMass);
+        b.position.y += ny * overlap * (aMass / totalMass);
+
+        const av = a.userData.velocity;
+        const bv = b.userData.velocity;
+        const relativeVelocityX = bv.x - av.x;
+        const relativeVelocityY = bv.y - av.y;
+        const velocityAlongNormal = relativeVelocityX * nx + relativeVelocityY * ny;
+        if (velocityAlongNormal > 0) {
+          continue;
+        }
+
+        const restitution = 0.78;
+        const impulse = -(1 + restitution) * velocityAlongNormal / (1 / aMass + 1 / bMass);
+        const impulseX = impulse * nx;
+        const impulseY = impulse * ny;
+        av.x -= impulseX / aMass;
+        av.y -= impulseY / aMass;
+        bv.x += impulseX / bMass;
+        bv.y += impulseY / bMass;
+
+        a.userData.angularVelocity.z -= impulseX * 0.0008;
+        b.userData.angularVelocity.z += impulseX * 0.0008;
+      }
+    }
+  }
+
+  removeBall(ball) {
+    if (!ball || ball.userData.removed) {
+      return;
+    }
+
+    ball.userData.removed = true;
+    this.group?.remove(ball);
+    this.balls = this.balls.filter((item) => item !== ball);
   }
 
   stop() {
@@ -1325,6 +1516,7 @@ class MundialModule {
     }
 
     this.active = false;
+    document.removeEventListener("pointerdown", this.handlePointerDown, { capture: true });
     this.engine.clearWorldCupWidget();
     if (this.group) {
       this.engine.scene.remove(this.group);
@@ -1336,7 +1528,6 @@ class MundialModule {
     this.material = null;
   }
 }
-
 function disposeObject3D(object) {
   const geometries = new Set();
   const materialSet = new Set();
@@ -1510,6 +1701,97 @@ function cssEscape(value) {
   return String(value).replace(/["\\]/g, "\\$&");
 }
 
+function safeLocalStorageGet(key) {
+  try {
+    return window.localStorage?.getItem(key) || "";
+  } catch {
+    return "";
+  }
+}
+
+function safeLocalStorageSet(key, value) {
+  try {
+    window.localStorage?.setItem(key, value);
+  } catch {
+    // Storage can be blocked in embedded or private browsing contexts.
+  }
+}
+
+function teamFlag(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  const code = normalized.replace(/[^a-z]/g, "").toUpperCase();
+  const direct = FLAG_BY_CODE[code] || FLAG_BY_NAME[normalized];
+  if (direct) {
+    return direct;
+  }
+  return "🏳️";
+}
+
+const FLAG_BY_CODE = Object.freeze({
+  ARG: "🇦🇷", AUS: "🇦🇺", AUT: "🇦🇹", BEL: "🇧🇪", BIH: "🇧🇦", BRA: "🇧🇷", CAN: "🇨🇦", CIV: "🇨🇮", CMR: "🇨🇲", COD: "🇨🇩", COL: "🇨🇴", CPV: "🇨🇻", CRO: "🇭🇷", CZE: "🇨🇿", CZECHIA: "🇨🇿", DEN: "🇩🇰", ECU: "🇪🇨", EGY: "🇪🇬", ENG: "🏴", FRA: "🇫🇷", GER: "🇩🇪", GHA: "🇬🇭", JPN: "🇯🇵", KOR: "🇰🇷", MAR: "🇲🇦", MEX: "🇲🇽", NED: "🇳🇱", NOR: "🇳🇴", PAR: "🇵🇾", POR: "🇵🇹", SEN: "🇸🇳", SPA: "🇪🇸", ESP: "🇪🇸", SWE: "🇸🇪", SUI: "🇨🇭", SWI: "🇨🇭", USA: "🇺🇸", URU: "🇺🇾"
+});
+
+const FLAG_BY_NAME = Object.freeze({
+  "argentina": "🇦🇷",
+  "australia": "🇦🇺",
+  "austria": "🇦🇹",
+  "belgium": "🇧🇪",
+  "belgica": "🇧🇪",
+  "bélgica": "🇧🇪",
+  "bosnia and herzegovina": "🇧🇦",
+  "bosnia": "🇧🇦",
+  "brazil": "🇧🇷",
+  "brasil": "🇧🇷",
+  "canada": "🇨🇦",
+  "canadá": "🇨🇦",
+  "cape verde": "🇨🇻",
+  "cabo verde": "🇨🇻",
+  "colombia": "🇨🇴",
+  "croatia": "🇭🇷",
+  "croacia": "🇭🇷",
+  "czechia": "🇨🇿",
+  "dinamarca": "🇩🇰",
+  "dr congo": "🇨🇩",
+  "ecuador": "🇪🇨",
+  "egypt": "🇪🇬",
+  "egipto": "🇪🇬",
+  "england": "🏴",
+  "france": "🇫🇷",
+  "francia": "🇫🇷",
+  "germany": "🇩🇪",
+  "alemania": "🇩🇪",
+  "ghana": "🇬🇭",
+  "ivory coast": "🇨🇮",
+  "cote d'ivoire": "🇨🇮",
+  "côte d’ivoire": "🇨🇮",
+  "japan": "🇯🇵",
+  "japón": "🇯🇵",
+  "korea republic": "🇰🇷",
+  "south korea": "🇰🇷",
+  "corea del sur": "🇰🇷",
+  "mexico": "🇲🇽",
+  "méxico": "🇲🇽",
+  "morocco": "🇲🇦",
+  "marruecos": "🇲🇦",
+  "netherlands": "🇳🇱",
+  "países bajos": "🇳🇱",
+  "norway": "🇳🇴",
+  "noruega": "🇳🇴",
+  "paraguay": "🇵🇾",
+  "portugal": "🇵🇹",
+  "senegal": "🇸🇳",
+  "spain": "🇪🇸",
+  "españa": "🇪🇸",
+  "sweden": "🇸🇪",
+  "suecia": "🇸🇪",
+  "switzerland": "🇨🇭",
+  "suiza": "🇨🇭",
+  "united states": "🇺🇸",
+  "usa": "🇺🇸",
+  "uruguay": "🇺🇾"
+});
+
+
 function overlayCss() {
   return `
     :host {
@@ -1654,8 +1936,7 @@ function overlayCss() {
       align-self: end;
     }
 
-    .eei-toast h2,
-    .eei-worldcup h2 {
+    .eei-toast h2 {
       margin: 5px 0 5px;
       font-size: 18px;
       line-height: 1.12;
@@ -1670,8 +1951,7 @@ function overlayCss() {
       line-height: 1.35;
     }
 
-    .eei-toast ul,
-    .eei-worldcup ul {
+    .eei-toast ul {
       list-style: none;
       margin: 0;
       padding: 0;
@@ -1693,103 +1973,74 @@ function overlayCss() {
 
     .eei-worldcup {
       position: absolute;
-      left: max(18px, env(safe-area-inset-left));
-      bottom: max(22px, env(safe-area-inset-bottom));
-      width: min(360px, calc(100vw - 32px));
-      padding: 16px;
-      border: 1px solid rgba(15, 23, 42, 0.12);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
-      -webkit-backdrop-filter: blur(20px);
-      backdrop-filter: blur(20px);
-      color: #0f172a;
-      animation: eei-toast-in 420ms cubic-bezier(.2,.8,.2,1) both;
-    }
-
-    .eei-worldcup li {
-      display: grid;
-      grid-template-columns: 54px minmax(0, 1fr);
-      gap: 4px 10px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(15, 23, 42, 0.09);
-      font-size: 12px;
-      color: rgba(15, 23, 42, 0.58);
-    }
-
-    .eei-worldcup li strong {
-      color: #0f172a;
-      font-size: 13px;
-      line-height: 1.25;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .eei-worldcup li span:last-child {
-      grid-column: 2;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .eei-match-time {
-      grid-row: span 2;
-      align-self: start;
+      left: max(12px, env(safe-area-inset-left));
+      bottom: max(12px, env(safe-area-inset-bottom));
       display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      max-width: calc(100vw - 24px);
       min-height: 28px;
+      padding: 4px 5px 4px 7px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      color: #0f172a;
+      pointer-events: auto;
+      animation: eei-pin-in 260ms cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .eei-worldcup-flags {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .eei-worldcup-chip {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0 8px;
+      gap: 1px;
+      height: 20px;
+      min-width: 34px;
+      padding: 0 4px;
       border-radius: 999px;
-      background: #103f3b;
-      color: #f8fafc;
-      font-size: 11px;
-      font-weight: 850;
+      background: rgba(15, 23, 42, 0.055);
+      font-size: 14px;
+      line-height: 1;
       white-space: nowrap;
     }
 
-    @media (max-width: 640px) {
-      .eei-maintenance {
-        grid-template-columns: 38px minmax(0, 1fr);
-        align-items: start;
-      }
-
-      .eei-maintenance img {
-        width: 38px;
-        height: 38px;
-      }
-
-      .eei-countdown {
-        grid-column: 1 / -1;
-        width: 100%;
-        min-width: 0;
-        border-left: 0;
-        border-top: 1px solid rgba(15, 23, 42, 0.1);
-        padding: 8px 0 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        text-align: left;
-      }
-
-      .eei-toast {
-        grid-template-columns: 74px minmax(0, 1fr);
-      }
-
-      .eei-toast img {
-        width: 74px;
-        height: 74px;
-      }
-
-      .eei-worldcup {
-        bottom: 150px;
-      }
+    .eei-worldcup-hide {
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      border: 0;
+      border-radius: 999px;
+      padding: 0;
+      background: rgba(15, 23, 42, 0.08);
+      color: rgba(15, 23, 42, 0.7);
+      font-size: 14px;
+      line-height: 1;
+      font-weight: 800;
+      cursor: pointer;
+      pointer-events: auto;
     }
 
-    @keyframes eei-slide-down {
-      from { opacity: 0; transform: translate(-50%, -16px); }
-      to { opacity: 1; transform: translate(-50%, 0); }
+    .eei-worldcup-hide:hover,
+    .eei-worldcup-hide:focus-visible {
+      background: rgba(15, 23, 42, 0.16);
+      color: #0f172a;
+      outline: none;
+    }
+
+    @keyframes eei-pin-in {
+      from { opacity: 0; transform: translateY(5px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     @keyframes eei-toast-in {

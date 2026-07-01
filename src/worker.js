@@ -1,12 +1,12 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v2";
+const EEI_ASSET_VERSION = "2026-07-01-v3";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const FOOTBALL_DATA_DEFAULT_BASE_URL = "https://api.football-data.org/v4";
 const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 2,
+  version: 3,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -41,9 +41,15 @@ const DEFAULT_CONFIG = {
     },
     mundial_2026: {
       enabled: false,
-      intensity: 0.72,
+      intensity: 0.42,
       sportsApiUrl: "/__eei/worldcup-matches",
-      priorityTeam: "Mexico"
+      priorityTeam: "Mexico",
+      compactPin: true,
+      hidePinPerDay: true,
+      ballCount: 4,
+      ballLifetimeMs: 18000,
+      ballAutoExitAfterMs: 10500,
+      ballInteraction: true
     }
   },
   assets: {
@@ -461,10 +467,23 @@ function deepMerge(base, override) {
 
 function normalizeRuntimeConfig(config) {
   const output = structuredClone(config);
+  const storedVersion = Number(output.version || 0);
+  output.version = Math.max(3, storedVersion || 0);
+
   if (output?.festivities?.mundial_2026) {
     const current = String(output.festivities.mundial_2026.sportsApiUrl || "");
     if (!current || current.includes("mock-worldcup-matches")) {
       output.festivities.mundial_2026.sportsApiUrl = "/__eei/worldcup-matches";
+    }
+
+    if (storedVersion < 3) {
+      output.festivities.mundial_2026.intensity = 0.42;
+      output.festivities.mundial_2026.compactPin = true;
+      output.festivities.mundial_2026.hidePinPerDay = true;
+      output.festivities.mundial_2026.ballCount = 4;
+      output.festivities.mundial_2026.ballLifetimeMs = 18000;
+      output.festivities.mundial_2026.ballAutoExitAfterMs = 10500;
+      output.festivities.mundial_2026.ballInteraction = true;
     }
   }
   if (output?.birthday && !Array.isArray(output.birthday.mockBirthdays)) {
@@ -551,6 +570,8 @@ function normalizeFootballDataMatches(matches, timeZone) {
       competition: match.competition?.name || "FIFA World Cup",
       home: home.shortName || home.tla || home.name || "Home",
       away: away.shortName || away.tla || away.name || "Away",
+      homeTla: home.tla || "",
+      awayTla: away.tla || "",
       venue: match.venue || "World Cup 2026",
       city: "",
       score: {
