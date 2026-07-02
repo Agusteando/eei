@@ -1,13 +1,17 @@
-# EEI Control — Zaraz handoff build
+EEI Control v21
 
-This build moves public injection away from wildcard Worker routes.
+Fixes the broken admin state contract from v20.
 
-Deploy this Worker, then use:
+Highlights:
+- The admin no longer becomes editable when /__eei/config fails to load.
+- Save state is derived from real loaded config + dirty state; disabled buttons now have a reason.
+- Maintenance presets prepare a draft; activation explicitly saves.
+- Preview/Vista now produces visible feedback and scrolls to the preview card.
+- Integration checks use configured endpoints and diagnose Cloudflare 1027, missing tokens, provider statuses, and HTTP errors.
+- Raw JSON actions stay disabled until a response exists.
+- Reload warns before discarding unsaved changes.
+- Key saving validates against a new /__eei/admin-check endpoint.
+- Hosts now summarize global blocked hosts and ISV host rules.
+- World Cup debug no longer sends dateTo unless explicitly requested.
 
-- Admin: https://eei.desarrollo-tecnologico.workers.dev/eei-admin
-- Public config: https://eei.desarrollo-tecnologico.workers.dev/__eei/public-config
-- Zaraz loader: https://eei.desarrollo-tecnologico.workers.dev/__eei/zaraz-loader.js?v=2026-07-01-v22-zaraz
-
-Important: remove broad Worker routes from casitaapps.com and casitaiedis.edu.mx. Zaraz becomes the public injection layer.
-
-Proxy injection is disabled by default (`EEI_PROXY_INJECTION = "0"`). Public injection must come from Zaraz.
+Deploy, then open /eei-admin.html?v=2026-07-01-v21.

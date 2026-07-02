@@ -13,8 +13,6 @@ directory = "./public"
 binding = "ASSETS"
 
 [vars]
-EEI_PUBLIC_BASE_URL = "https://eei.desarrollo-tecnologico.workers.dev"
-EEI_PROXY_INJECTION = "0"
 SIGNIA_BIRTHDAY_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays"
 FOOTBALL_DATA_BASE_URL = "https://api.football-data.org/v4"
 FOOTBALL_DATA_COMPETITION_CODE = "WC"

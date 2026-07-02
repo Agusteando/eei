@@ -1,15 +1,14 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v22-zaraz";
+const EEI_ASSET_VERSION = "2026-07-01-v21";
 const ISV_DEFAULT_SCRIPT_URL = "https://isv-ev2.pages.dev/isv-banner.js";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const SIGNIA_DEFAULT_PLANTELES_URL = "https://signia.casitaapps.com/api/planteles/list";
 const FOOTBALL_DATA_DEFAULT_BASE_URL = "https://api.football-data.org/v4";
 const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
-const EEI_DEFAULT_PUBLIC_BASE_URL = "https://eei.desarrollo-tecnologico.workers.dev";
 
 const DEFAULT_CONFIG = {
-  version: 22,
+  version: 21,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -99,14 +98,6 @@ export default {
       return handleConfig(request, env);
     }
 
-    if (url.pathname === "/__eei/public-config") {
-      return handlePublicConfig(request, env);
-    }
-
-    if (url.pathname === "/__eei/zaraz-loader.js") {
-      return handleZarazLoader(request, env);
-    }
-
     if (url.pathname === "/__eei/admin-check") {
       return handleAdminCheck(request, env);
     }
@@ -135,18 +126,11 @@ export default {
       return serveAsset(env, request, url.pathname.replace("/__eei", ""));
     }
 
-    if (url.pathname === "/eei-admin" || url.pathname === "/eei-admin/") {
-      return serveAsset(env, request, "/eei-admin.html", "text/html; charset=utf-8");
-    }
-
     if (url.pathname === "/eei-admin.html" || url.pathname.startsWith("/assets/") || url.pathname.startsWith("/vendor/") || url.pathname === "/eei-engine.js") {
       return serveAsset(env, request, url.pathname);
     }
 
     const upstreamResponse = await fetchUpstream(request, env);
-    if (env.EEI_PROXY_INJECTION !== "1") {
-      return upstreamResponse;
-    }
     return maybeInject(request, env, upstreamResponse);
   }
 };
@@ -192,144 +176,6 @@ async function handleConfig(request, env) {
   return json(next, {
     "Cache-Control": "no-store"
   });
-}
-
-
-async function handlePublicConfig(request, env) {
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    return json({ error: "Method not allowed" }, {}, 405);
-  }
-  const config = await readConfig(env);
-  const publicConfig = makePublicRuntimeConfig(config, request, env);
-  return json(publicConfig, {
-    "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
-    "X-EEI-Public-Config": "1"
-  });
-}
-
-async function handleZarazLoader(request, env) {
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    return new Response("Method not allowed", { status: 405 });
-  }
-
-  const config = makePublicRuntimeConfig(await readConfig(env), request, env);
-  const baseUrl = getPublicBaseUrl(request, env).replace(/\/$/, "");
-  const engineUrl = `${baseUrl}/__eei/engine.js?v=${encodeURIComponent(EEI_ASSET_VERSION)}`;
-  const publicConfigUrl = `${baseUrl}/__eei/public-config`;
-  const body = buildZarazLoaderScript({ config, engineUrl, publicConfigUrl });
-
-  return new Response(body, {
-    headers: {
-      "Content-Type": "application/javascript; charset=utf-8",
-      "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
-      "Access-Control-Allow-Origin": "*",
-      "X-EEI-Zaraz-Loader": EEI_ASSET_VERSION
-    }
-  });
-}
-
-function buildZarazLoaderScript({ config, engineUrl, publicConfigUrl }) {
-  return `(() => {
-  const VERSION = ${JSON.stringify(EEI_ASSET_VERSION)};
-  const CONFIG_URL = ${JSON.stringify(publicConfigUrl)};
-  const ENGINE_URL = ${JSON.stringify(engineUrl)};
-  const CONFIG = ${JSON.stringify(config)};
-  const w = window;
-  if (w.__EEI_ZARAZ_LOADER_VERSION__ === VERSION || w.__EEI_ZARAZ_LOADING__) return;
-  w.__EEI_ZARAZ_LOADER_VERSION__ = VERSION;
-  w.__EEI_ZARAZ_LOADING__ = true;
-
-  function hostMatches(hostname, pattern) {
-    hostname = String(hostname || "").toLowerCase();
-    pattern = String(pattern || "").trim().toLowerCase();
-    if (!pattern) return false;
-    if (pattern === "*" || pattern === "all") return true;
-    if (pattern.startsWith("*.")) {
-      const suffix = pattern.slice(1);
-      return hostname.endsWith(suffix) && hostname.length > suffix.length;
-    }
-    if (pattern.startsWith("*")) return hostname.endsWith(pattern.slice(1));
-    return hostname === pattern;
-  }
-
-  function anyHost(hostname, patterns) {
-    return Array.isArray(patterns) && patterns.some((pattern) => hostMatches(hostname, pattern));
-  }
-
-  function injectScript(src, attrs) {
-    if (!src) return;
-    const existing = Array.from(document.querySelectorAll("script[src]")).some((script) => script.src === src);
-    if (existing) return;
-    const script = document.createElement("script");
-    script.src = src;
-    script.defer = true;
-    for (const [key, value] of Object.entries(attrs || {})) script.setAttribute(key, value);
-    (document.head || document.documentElement).appendChild(script);
-  }
-
-  function runIsv(config) {
-    const isv = config && config.campaigns && config.campaigns.isv ? config.campaigns.isv : null;
-    if (!isv || isv.enabled === false) return;
-    const hostname = location.hostname.toLowerCase();
-    const include = Array.isArray(isv.includeHostnames) ? isv.includeHostnames : [];
-    const exclude = Array.isArray(isv.excludeHostnames) ? isv.excludeHostnames : [];
-    if (include.length && !anyHost(hostname, include)) return;
-    if (exclude.length && anyHost(hostname, exclude)) return;
-    injectScript(isv.scriptUrl, { "data-isv-campaign": "true", "data-eei-zaraz": "true" });
-  }
-
-  Promise.resolve(CONFIG)
-    .then((config) => {
-      runIsv(config);
-      return import(ENGINE_URL).then((engine) => {
-        if (engine && typeof engine.startEEI === "function") {
-          return engine.startEEI(config, { configEndpoint: CONFIG_URL });
-        }
-      });
-    })
-    .catch((error) => {
-      console.warn("EEI Zaraz loader failed", error);
-    })
-    .finally(() => {
-      w.__EEI_ZARAZ_LOADING__ = false;
-    });
-})();\n`;
-}
-
-function getPublicBaseUrl(request, env) {
-  const configured = env.EEI_PUBLIC_BASE_URL || EEI_DEFAULT_PUBLIC_BASE_URL;
-  try {
-    return new URL(configured).toString().replace(/\/$/, "");
-  } catch {
-    const url = new URL(request.url);
-    return `${url.protocol}//${url.host}`;
-  }
-}
-
-function makePublicRuntimeConfig(config, request, env) {
-  const output = normalizeRuntimeConfig(structuredClone(config || {}));
-  const baseUrl = getPublicBaseUrl(request, env).replace(/\/$/, "");
-  output.assetsBaseUrl = `${baseUrl}/__eei/assets/`;
-
-  if (output.birthday && typeof output.birthday === "object") {
-    output.birthday.apiUrl = absoluteEeIEndpoint(output.birthday.apiUrl, baseUrl, "/__eei/signia-birthdays");
-    output.birthday.plantelesApiUrl = absoluteEeIEndpoint(output.birthday.plantelesApiUrl, baseUrl, "/__eei/signia-planteles");
-  }
-
-  if (output.festivities?.mundial_2026 && typeof output.festivities.mundial_2026 === "object") {
-    output.festivities.mundial_2026.sportsApiUrl = absoluteEeIEndpoint(output.festivities.mundial_2026.sportsApiUrl, baseUrl, "/__eei/worldcup-matches");
-  }
-
-  return output;
-}
-
-function absoluteEeIEndpoint(value, baseUrl, fallbackPath) {
-  const raw = String(value || fallbackPath || "").trim();
-  if (/^https?:\/\//i.test(raw)) {
-    return raw;
-  }
-  const path = raw.startsWith("/") ? raw : fallbackPath;
-  return `${baseUrl}${path}`;
 }
 
 async function handleAdminCheck(request, env) {
@@ -894,7 +740,7 @@ function deepMerge(base, override) {
 function normalizeRuntimeConfig(config) {
   const output = structuredClone(config);
   const storedVersion = Number(output.version || 0);
-  output.version = Math.max(22, storedVersion || 0);
+  output.version = Math.max(21, storedVersion || 0);
 
   if (!output.injection || typeof output.injection !== "object") {
     output.injection = structuredClone(DEFAULT_CONFIG.injection);
