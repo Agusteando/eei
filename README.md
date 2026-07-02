@@ -1,17 +1,16 @@
-EEI Control v21
+EEI Control Worker v23
 
-Fixes the broken admin state contract from v20.
+Restores the Worker-based gateway after the Zaraz/static handoff experiment.
 
-Highlights:
-- The admin no longer becomes editable when /__eei/config fails to load.
-- Save state is derived from real loaded config + dirty state; disabled buttons now have a reason.
-- Maintenance presets prepare a draft; activation explicitly saves.
-- Preview/Vista now produces visible feedback and scrolls to the preview card.
-- Integration checks use configured endpoints and diagnose Cloudflare 1027, missing tokens, provider statuses, and HTTP errors.
-- Raw JSON actions stay disabled until a response exists.
-- Reload warns before discarding unsaved changes.
-- Key saving validates against a new /__eei/admin-check endpoint.
-- Hosts now summarize global blocked hosts and ISV host rules.
-- World Cup debug no longer sends dateTo unless explicitly requested.
+This build is intentionally Worker-first:
+- Broad Worker routes can inject EEI/ISV into HTML pages again.
+- No Zaraz loader is required.
+- No `EEI_PROXY_INJECTION` flag is required.
+- `/eei-admin` and `/eei-admin.html` both serve the admin.
+- The v21 admin fixes are preserved: reliable config load, correct save dirty state, explicit maintenance actions, diagnostics, admin key check, host summaries, and non-stub preview feedback.
+- Birthday, Signia planteles, Mundial, ISV rules, maintenance, winter, New Year, ball physics, ambassadors, and blocked hosts remain Worker/KV-backed.
 
-Deploy, then open /eei-admin.html?v=2026-07-01-v21.
+Deploy, then open:
+/eei-admin?v=2026-07-02-v23-worker
+
+For the paid Workers plan, keep the broad Worker routes only where you want automatic injection.

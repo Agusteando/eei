@@ -1,5 +1,5 @@
 const CONFIG_KEY = "config";
-const EEI_ASSET_VERSION = "2026-07-01-v21";
+const EEI_ASSET_VERSION = "2026-07-02-v23-worker";
 const ISV_DEFAULT_SCRIPT_URL = "https://isv-ev2.pages.dev/isv-banner.js";
 const SIGNIA_DEFAULT_URL = "https://signia.casitaapps.com/api/export/employees/today-birthdays";
 const SIGNIA_DEFAULT_PLANTELES_URL = "https://signia.casitaapps.com/api/planteles/list";
@@ -8,7 +8,7 @@ const FOOTBALL_DATA_DEFAULT_COMPETITION = "WC";
 const FOOTBALL_DATA_DEFAULT_SEASON = "2026";
 
 const DEFAULT_CONFIG = {
-  version: 21,
+  version: 23,
   enabled: true,
   assetsBaseUrl: "auto",
   performance: {
@@ -124,6 +124,10 @@ export default {
 
     if (url.pathname.startsWith("/__eei/assets/")) {
       return serveAsset(env, request, url.pathname.replace("/__eei", ""));
+    }
+
+    if (url.pathname === "/eei-admin" || url.pathname === "/eei-admin/") {
+      return serveAsset(env, request, "/eei-admin.html", "text/html; charset=utf-8");
     }
 
     if (url.pathname === "/eei-admin.html" || url.pathname.startsWith("/assets/") || url.pathname.startsWith("/vendor/") || url.pathname === "/eei-engine.js") {
